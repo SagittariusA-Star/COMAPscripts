@@ -150,6 +150,9 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     c2_icrs = SkyCoord(ra = x2, dec = y2, frame = "icrs", unit = "deg")
     c3_icrs = SkyCoord(ra = x3, dec = y3, frame = "icrs", unit = "deg")
     
+    
+    
+    """
     x1_gal, y1_gal = (c1_icrs.transform_to("galactic")).l.deg, (c1_icrs.transform_to("galactic")).b.deg     
     x2_gal, y2_gal = (c2_icrs.transform_to("galactic")).l.deg, (c2_icrs.transform_to("galactic")).b.deg 
     x3_gal, y3_gal = (c3_icrs.transform_to("galactic")).l.deg, (c3_icrs.transform_to("galactic")).b.deg 
@@ -169,11 +172,9 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
 
     x_arr[0, :] = x1_gal; x_arr[1, :] = x2_gal; x_arr[2, :] = x3_gal 
     y_arr[0, :] = y1_gal; y_arr[1, :] = y2_gal; y_arr[2, :] = y3_gal
-    """
 
-    x_arr[0, :] = x1; x_arr[1, :] = x2; x_arr[2, :] = x3 
-    y_arr[0, :] = y1; y_arr[1, :] = y2; y_arr[2, :] = y3
-    """
+    #x_arr[0, :] = x1; x_arr[1, :] = x2; x_arr[2, :] = x3 
+    #y_arr[0, :] = y1; y_arr[1, :] = y2; y_arr[2, :] = y3
 
     hits[0, ...] = np.sum(hits1[:, sb - 1, freq - 1, :, :], axis = 0)   # Co-adding hits of all detectors
     hits[1, ...] = np.sum(hits2[:, sb - 1, freq - 1, :, :], axis = 0)
@@ -187,8 +188,8 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     m[px_indices2] = hits[ 1, ...].flatten() 
     m[px_indices3] = hits[ 2, ...].flatten() 
      
-    """Projection"""
-    """
+    #Projection
+    
     for k in range(3):
         for i in range(nx):
             for j in range(ny):
@@ -196,8 +197,9 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
                 hits_list[k, nx * i + j] = hits[k, i, j]
         
         m[px_indices[k, :]] = hits_list[k, :]     
-    """
+    
     print(np.max(m))
+    """
     return m
 
 def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
