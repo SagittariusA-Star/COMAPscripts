@@ -103,10 +103,13 @@ def readMap(filename):
     """
 
     dfile   = h5.File(filename,'r')     # Reading in file
-    x       = dfile['x'];         x  = np.array(x[:]).astype(float) # Right ascension of pixels
-    y       = dfile['y'];         y  = np.array(y[:]).astype(float) # Declination of pixels
+    x       = dfile['x'];         
+    x  = np.array(x[:]).astype(float)   # Right ascension of pixels
+    y       = dfile['y'];         
+    y  = np.array(y[:]).astype(float)   # Declination of pixels
     hitname = 'nhit'
-    hits    = dfile[hitname];  hits  = np.array(hits[...]).astype(float) # Number of hits per pixel
+    hits    = dfile[hitname];  
+    hits  = np.array(hits[...]).astype(float) # Number of hits per pixel
 
     return x, y, hits
 
@@ -141,9 +144,9 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     Nside = int(round(np.sqrt(360 * 360 / (12 * np.pi * dx * dy)))) # Nside parameter for healpix map (under the 
                                                                     # assumption that each pixel in the input maps
                                                                     # is equal in area to the output healpix pixels). 
-    
-    x_arr = np.zeros((3, len(x1)))  # Array of x values of all three maps
-    y_arr = np.zeros((3, len(y1)))  # Array of y values of all three maps
+    log2_Nside = np.log2(Nside)
+    Nside = 2 ** (round(log2_Nside))    # Finding closest power of two for nside
+
     hits  = np.zeros((3, nx, ny))   # Array of hits per pixel of all three maps
 
     c1_icrs = SkyCoord(ra = x1, dec = y1, frame = "icrs", unit = "deg")
@@ -153,51 +156,49 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     x1_gal, y1_gal = (c1_icrs.transform_to("galactic")).l.deg, (c1_icrs.transform_to("galactic")).b.deg     
     x2_gal, y2_gal = (c2_icrs.transform_to("galactic")).l.deg, (c2_icrs.transform_to("galactic")).b.deg 
     x3_gal, y3_gal = (c3_icrs.transform_to("galactic")).l.deg, (c3_icrs.transform_to("galactic")).b.deg 
-    
+   
     lon1, lat1 = np.meshgrid(x1_gal, y1_gal, indexing='ij')
     lon2, lat2 = np.meshgrid(x2_gal, y2_gal, indexing='ij')
     lon3, lat3 = np.meshgrid(x3_gal, y3_gal, indexing='ij')
 
+    lon1_norm, lat1_norm = np.meshgrid(x1, y1, indexing='ij')
+    lon2_norm, lat2_norm = np.meshgrid(x2, y2, indexing='ij')
+    lon3_norm, lat3_norm = np.meshgrid(x3, y3, indexing='ij')
+
     lon1, lat1 = lon1.flatten(), lat1.flatten()
     lon2, lat2 = lon2.flatten(), lat2.flatten()
     lon3, lat3 = lon3.flatten(), lat3.flatten()
-
-    heal = HEALPix(Nside, order = "ring", frame = "galactic")
+    
+    lon1_norm, lat1_norm = lon1_norm.flatten(), lat1_norm.flatten()
+    lon2_norm, lat2_norm = lon2_norm.flatten(), lat2_norm.flatten()
+    lon3_norm, lat3_norm = lon3_norm.flatten(), lat3_norm.flatten()
+        
+    heal = HEALPix(Nside, order = "ring", frame = "icrs")
+    
     px_indices1 = heal.lonlat_to_healpix(lon1 * u.deg, lat1 * u.deg)
     px_indices2 = heal.lonlat_to_healpix(lon2 * u.deg, lat2 * u.deg)
     px_indices3 = heal.lonlat_to_healpix(lon3 * u.deg, lat3 * u.deg)
 
-    x_arr[0, :] = x1_gal; x_arr[1, :] = x2_gal; x_arr[2, :] = x3_gal 
-    y_arr[0, :] = y1_gal; y_arr[1, :] = y2_gal; y_arr[2, :] = y3_gal
-    """
+    px_indices1_norm = heal.lonlat_to_healpix(lon1_norm * u.deg, lat1_norm * u.deg)
+    px_indices2_norm = heal.lonlat_to_healpix(lon2_norm * u.deg, lat2_norm * u.deg)
+    px_indices3_norm = heal.lonlat_to_healpix(lon3_norm * u.deg, lat3_norm * u.deg)
 
-    x_arr[0, :] = x1; x_arr[1, :] = x2; x_arr[2, :] = x3 
-    y_arr[0, :] = y1; y_arr[1, :] = y2; y_arr[2, :] = y3
-    """
 
     hits[0, ...] = np.sum(hits1[:, sb - 1, freq - 1, :, :], axis = 0)   # Co-adding hits of all detectors
     hits[1, ...] = np.sum(hits2[:, sb - 1, freq - 1, :, :], axis = 0)
     hits[2, ...] = np.sum(hits3[:, sb - 1, freq - 1, :, :], axis = 0)  
 
-    px_indices = np.zeros((3, nx * ny), dtype = int)    # List to contain HEALPix indices corresponding to each input map pixel
-    hits_list = np.zeros((3, nx * ny))                   # List to contain hits of each pixel to be mapped to HEALPix format
-    m = np.zeros(hp.nside2npix(Nside))      # Array to contain the projected pixels
-    
-    m[px_indices1] = hits[ 0, ...].flatten() 
-    m[px_indices2] = hits[ 1, ...].flatten() 
-    m[px_indices3] = hits[ 2, ...].flatten() 
-     
-    """Projection"""
-    """
-    for k in range(3):
-        for i in range(nx):
-            for j in range(ny):
-                px_indices[k, nx * i + j] = hp.ang2pix(Nside, x_arr[k, i], y_arr[k, j], lonlat = True)
-                hits_list[k, nx * i + j] = hits[k, i, j]
-        
-        m[px_indices[k, :]] = hits_list[k, :]     
-    """
-    print(np.max(m))
+    hits_list = np.zeros((3, nx * ny))  # List to contain hits of each pixel to be mapped to HEALPix format
+    m = np.zeros(heal.npix)             # Array to contain the projected pixels
+
+    m[px_indices1] += -1 #hits[ 0, ...].flatten() 
+    #m[px_indices2] += hits[ 1, ...].flatten() 
+    #m[px_indices3] += hits[ 2, ...].flatten() 
+
+    unique, counts = np.unique(px_indices1, return_counts = True)
+    unique_norm, counts_norm = np.unique(px_indices1_norm, return_counts = True)
+    #for i in range(len(unique)):
+    #    print(unique[i], counts[i], " | ", unique_norm[i], counts_norm[i])
     return m
 
 def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
@@ -229,7 +230,7 @@ def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
         hp.fitsfunc.write_map(outfile, m, fits_IDL = False, overwrite = True, coord = "G", dtype = int)
 
     elif mapfiletype == "png":
-        hp.mollview(m, cmap = cm.Oranges, coord = "G", min = color_lim[0], max = color_lim[1])
+        hp.mollview(m, cmap = cm.Oranges, coord = "G", min = color_lim[0], max = color_lim[1], nest = False)
         plt.savefig(outfile)
         plt.show()
 
