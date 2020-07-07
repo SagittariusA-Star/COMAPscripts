@@ -8,7 +8,9 @@ import getopt
 import textwrap
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-import coordinates
+from coordinates import _equ2gal
+from astropy_healpix import HEALPix
+
 
 def usage():
     """
@@ -139,18 +141,31 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     Nside = int(round(np.sqrt(360 * 360 / (12 * np.pi * dx * dy)))) # Nside parameter for healpix map (under the 
                                                                     # assumption that each pixel in the input maps
                                                                     # is equal in area to the output healpix pixels). 
+    
     x_arr = np.zeros((3, len(x1)))  # Array of x values of all three maps
     y_arr = np.zeros((3, len(y1)))  # Array of y values of all three maps
     hits  = np.zeros((3, nx, ny))   # Array of hits per pixel of all three maps
 
-    
-    c1_icrs = SkyCoord(ra = x1, dec = y1, frame = "fk4", unit = "deg")
-    c2_icrs = SkyCoord(ra = x2, dec = y2, frame = "fk4", unit = "deg")
-    c3_icrs = SkyCoord(ra = x3, dec = y3, frame = "fk4", unit = "deg")
+    c1_icrs = SkyCoord(ra = x1, dec = y1, frame = "icrs", unit = "deg")
+    c2_icrs = SkyCoord(ra = x2, dec = y2, frame = "icrs", unit = "deg")
+    c3_icrs = SkyCoord(ra = x3, dec = y3, frame = "icrs", unit = "deg")
     
     x1_gal, y1_gal = (c1_icrs.transform_to("galactic")).l.deg, (c1_icrs.transform_to("galactic")).b.deg     
     x2_gal, y2_gal = (c2_icrs.transform_to("galactic")).l.deg, (c2_icrs.transform_to("galactic")).b.deg 
     x3_gal, y3_gal = (c3_icrs.transform_to("galactic")).l.deg, (c3_icrs.transform_to("galactic")).b.deg 
+    
+    lon1, lat1 = np.meshgrid(x1_gal, y1_gal, indexing='ij')
+    lon2, lat2 = np.meshgrid(x2_gal, y2_gal, indexing='ij')
+    lon3, lat3 = np.meshgrid(x3_gal, y3_gal, indexing='ij')
+
+    lon1, lat1 = lon1.flatten(), lat1.flatten()
+    lon2, lat2 = lon2.flatten(), lat2.flatten()
+    lon3, lat3 = lon3.flatten(), lat3.flatten()
+
+    heal = HEALPix(Nside, order = "ring", frame = "galactic")
+    px_indices1 = heal.lonlat_to_healpix(lon1 * u.deg, lat1 * u.deg)
+    px_indices2 = heal.lonlat_to_healpix(lon2 * u.deg, lat2 * u.deg)
+    px_indices3 = heal.lonlat_to_healpix(lon3 * u.deg, lat3 * u.deg)
 
     x_arr[0, :] = x1_gal; x_arr[1, :] = x2_gal; x_arr[2, :] = x3_gal 
     y_arr[0, :] = y1_gal; y_arr[1, :] = y2_gal; y_arr[2, :] = y3_gal
@@ -165,10 +180,15 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     hits[2, ...] = np.sum(hits3[:, sb - 1, freq - 1, :, :], axis = 0)  
 
     px_indices = np.zeros((3, nx * ny), dtype = int)    # List to contain HEALPix indices corresponding to each input map pixel
-    hits_list = np.ones((3, nx * ny))                   # List to contain hits of each pixel to be mapped to HEALPix format
+    hits_list = np.zeros((3, nx * ny))                   # List to contain hits of each pixel to be mapped to HEALPix format
     m = np.zeros(hp.nside2npix(Nside))      # Array to contain the projected pixels
-
+    
+    m[px_indices1] = hits[ 0, ...].flatten() 
+    m[px_indices2] = hits[ 1, ...].flatten() 
+    m[px_indices3] = hits[ 2, ...].flatten() 
+     
     """Projection"""
+    """
     for k in range(3):
         for i in range(nx):
             for j in range(ny):
@@ -176,6 +196,8 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
                 hits_list[k, nx * i + j] = hits[k, i, j]
         
         m[px_indices[k, :]] = hits_list[k, :]     
+    """
+    print(np.max(m))
     return m
 
 def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
@@ -204,13 +226,12 @@ def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
 
     m = map2healpix(infile1, infile2, infile3, sb, freq)
     if mapfiletype == "FITS":
-        hp.fitsfunc.write_map(outfile, m, fits_IDL = False, overwrite = True, coord = "C", dtype = int)
+        hp.fitsfunc.write_map(outfile, m, fits_IDL = False, overwrite = True, coord = "G", dtype = int)
 
     elif mapfiletype == "png":
-        print(m[np.where(m != 0)])
         hp.mollview(m, cmap = cm.Oranges, coord = "G", min = color_lim[0], max = color_lim[1])
-        plt.show()
         plt.savefig(outfile)
+        plt.show()
 
     else:
         print("Please provide either FITS or png file format for final HEALPix map file!")
@@ -240,7 +261,7 @@ def open_and_show_FITS_map(infile, coord = ["C", "G"], show = True):
 
 if __name__ == "__main__":
   savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype)
-  open_and_show_FITS_map(outfile)
+  #open_and_show_FITS_map(outfile)
 
 
 
