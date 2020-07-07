@@ -149,10 +149,30 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
 
     hits  = np.zeros((3, nx, ny))   # Array of hits per pixel of all three maps
 
-    c1_icrs = SkyCoord(ra = x1, dec = y1, frame = "icrs", unit = "deg")
-    c2_icrs = SkyCoord(ra = x2, dec = y2, frame = "icrs", unit = "deg")
-    c3_icrs = SkyCoord(ra = x3, dec = y3, frame = "icrs", unit = "deg")
+    lon1, lat1 = np.meshgrid(x1, y1, indexing='ij')
+    lon2, lat2 = np.meshgrid(x2, y2, indexing='ij')
+    lon3, lat3 = np.meshgrid(x3, y3, indexing='ij')
+
+    lon1, lat1 = lon1.flatten(), lat1.flatten()
+    lon2, lat2 = lon2.flatten(), lat2.flatten()
+    lon3, lat3 = lon3.flatten(), lat3.flatten()
     
+    c1_icrs = SkyCoord(ra = lon1, dec = lat1, frame = "icrs", unit = "deg")
+    c2_icrs = SkyCoord(ra = lon2, dec = lat2, frame = "icrs", unit = "deg")
+    c3_icrs = SkyCoord(ra = lon3, dec = lat3, frame = "icrs", unit = "deg")
+
+    c1_gal = c1_icrs.transform_to("galactic")     
+    c2_gal = c2_icrs.transform_to("galactic") 
+    c3_gal = c3_icrs.transform_to("galactic") 
+    
+    heal = HEALPix(Nside, order = "ring", frame = "galactic")
+
+    px_indices1 = heal.skycoord_to_healpix(c1_gal)
+    px_indices2 = heal.skycoord_to_healpix(c2_gal)
+    px_indices3 = heal.skycoord_to_healpix(c3_gal)
+
+    print(len(px_indices1))
+    """
     x1_gal, y1_gal = (c1_icrs.transform_to("galactic")).l.deg, (c1_icrs.transform_to("galactic")).b.deg     
     x2_gal, y2_gal = (c2_icrs.transform_to("galactic")).l.deg, (c2_icrs.transform_to("galactic")).b.deg 
     x3_gal, y3_gal = (c3_icrs.transform_to("galactic")).l.deg, (c3_icrs.transform_to("galactic")).b.deg 
@@ -161,29 +181,16 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     lon2, lat2 = np.meshgrid(x2_gal, y2_gal, indexing='ij')
     lon3, lat3 = np.meshgrid(x3_gal, y3_gal, indexing='ij')
 
-    lon1_norm, lat1_norm = np.meshgrid(x1, y1, indexing='ij')
-    lon2_norm, lat2_norm = np.meshgrid(x2, y2, indexing='ij')
-    lon3_norm, lat3_norm = np.meshgrid(x3, y3, indexing='ij')
-
     lon1, lat1 = lon1.flatten(), lat1.flatten()
     lon2, lat2 = lon2.flatten(), lat2.flatten()
     lon3, lat3 = lon3.flatten(), lat3.flatten()
     
-    lon1_norm, lat1_norm = lon1_norm.flatten(), lat1_norm.flatten()
-    lon2_norm, lat2_norm = lon2_norm.flatten(), lat2_norm.flatten()
-    lon3_norm, lat3_norm = lon3_norm.flatten(), lat3_norm.flatten()
-        
-    heal = HEALPix(Nside, order = "ring", frame = "icrs")
+    heal = HEALPix(Nside, order = "ring", frame = "galactic")
     
     px_indices1 = heal.lonlat_to_healpix(lon1 * u.deg, lat1 * u.deg)
     px_indices2 = heal.lonlat_to_healpix(lon2 * u.deg, lat2 * u.deg)
     px_indices3 = heal.lonlat_to_healpix(lon3 * u.deg, lat3 * u.deg)
-
-    px_indices1_norm = heal.lonlat_to_healpix(lon1_norm * u.deg, lat1_norm * u.deg)
-    px_indices2_norm = heal.lonlat_to_healpix(lon2_norm * u.deg, lat2_norm * u.deg)
-    px_indices3_norm = heal.lonlat_to_healpix(lon3_norm * u.deg, lat3_norm * u.deg)
-
-
+    """
     hits[0, ...] = np.sum(hits1[:, sb - 1, freq - 1, :, :], axis = 0)   # Co-adding hits of all detectors
     hits[1, ...] = np.sum(hits2[:, sb - 1, freq - 1, :, :], axis = 0)
     hits[2, ...] = np.sum(hits3[:, sb - 1, freq - 1, :, :], axis = 0)  
@@ -196,9 +203,9 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     #m[px_indices3] += hits[ 2, ...].flatten() 
 
     unique, counts = np.unique(px_indices1, return_counts = True)
-    unique_norm, counts_norm = np.unique(px_indices1_norm, return_counts = True)
     #for i in range(len(unique)):
-    #    print(unique[i], counts[i], " | ", unique_norm[i], counts_norm[i])
+    #    print(unique[i], counts[i])
+
     return m
 
 def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
