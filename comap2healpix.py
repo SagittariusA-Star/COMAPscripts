@@ -26,7 +26,7 @@ def usage():
     m5 = "(Filename of third input map)"
     m6 = "(color_limits of colorbar) as nested list. First plot --> first list in main list. Default none)"
     m7 = "(Outfile name, default 'outfile')"
-    m8 = "(Save HEALPix map as .png or FITS. Default FITS)"
+    m8 = "(Save HEALPix map as .png or .fits format. Default FITS)"
 
     print("\nThis is the usage function\n")
     print("Flags:")
@@ -43,7 +43,7 @@ def usage():
 sb           = 2
 freq         = 30
 color_lim    = [None, None]
-mapfiletype  = "FITS"
+mapfiletype  = "fits"
 
 if len(sys.argv) == 1:
     usage()
@@ -178,11 +178,12 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     hits[2, ...] = np.sum(hits3[:, sb - 1, freq - 1, :, :], axis = 0)  
 
     hits_list = np.zeros((3, nx * ny))  # List to contain hits of each pixel to be mapped to HEALPix format
-    m = np.zeros(heal.npix)             # Array to contain the projected pixels
+    m = np.zeros(heal.npix)             # Array to contain the projected HEALPix pixels
 
-    m[px_indices1] = hits[ 0, ...].flatten() 
+    m[px_indices1] = hits[ 0, ...].flatten() # Filling up HEALPix array with hitmaps
     m[px_indices2] = hits[ 1, ...].flatten() 
     m[px_indices3] = hits[ 2, ...].flatten() 
+
     return m
 
 def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
@@ -197,7 +198,7 @@ def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
     infile3: str 
         Filename of third input file. HDF-file, .h5 format  
     outfile: str
-        Filename of file to save final HEALPix map to. Either with ending .fits of .png
+        Filename of file to save final HEALPix map to. 
     sb: int
         Number of sideband to use (base 1 not 0, i.e first and second sideband
         are sb = 1 and sb = 2 respectively)
@@ -210,19 +211,21 @@ def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
     """
 
     m = map2healpix(infile1, infile2, infile3, sb, freq)
-    if mapfiletype == "FITS":
+    if mapfiletype == "fits":
+        outfile += ".fits"
         hp.fitsfunc.write_map(outfile, m, fits_IDL = False, overwrite = True, coord = "G", dtype = int)
 
     elif mapfiletype == "png":
-        hp.mollview(m, cmap = cm.Oranges, coord = "G", min = color_lim[0], max = color_lim[1], nest = False)
+        outfile += ".png"
+        hp.mollview(m, cmap = cm.Oranges, coord = "G", min = color_lim[0], max = color_lim[1], 
+                    nest = False, title = None, unit = "Hits")
         plt.savefig(outfile)
-        plt.show()
 
     else:
-        print("Please provide either FITS or png file format for final HEALPix map file!")
-        pass
+        print("Please provide either FITS or png file format for final HEALPix map file to be saved!")
+        exit()
 
-def open_and_show_FITS_map(infile, coord = ["C", "G"], show = True):
+def open_and_show_FITS_map(infile, infiletype):
     """
     Function opening and showing the HEALPix hit full-sky map made by the 
     function savehealpix. Also the function transforms the opened FITS image 
@@ -238,15 +241,20 @@ def open_and_show_FITS_map(infile, coord = ["C", "G"], show = True):
     show: bool
         If true the loaded FITS image will be displayed.
     """ 
-    healmap = hp.fitsfunc.read_map(infile, dtype = int)
-    hp.mollview(healmap, cmap = cm.Oranges, coord = coord)
-    if show:
+    if mapfiletype == "fits":
+        infile += ".fits"
+        healmap = hp.fitsfunc.read_map(infile, dtype = int)
+        hp.mollview(healmap, cmap = cm.Oranges, coord = "G", min = color_lim[0], max = color_lim[1],
+                    nest = False, title = None, unit = "Hits")
         plt.show()
+    else: 
+        print("Please provide FITS file format to open HEALPix map file!")
+        exit()
 
 
 if __name__ == "__main__":
-  savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype)
-  #open_and_show_FITS_map(outfile)
+  #savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype)
+  open_and_show_FITS_map(outfile, mapfiletype)
 
 
 
