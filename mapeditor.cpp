@@ -19,11 +19,13 @@ int main(int argc, char *argv[]){
     int x_index;
     int y_index;
     int number_of_maps;
+    int plot_len;
 
-    char *infile = "";
-    char *plot = "";
-    char *outfile = "";
-    char *a = "rms";
+    char *infile;
+    char *outfile;
+    std::string plot;
+    std::string a = "rms";
+    a = "rms";
     bool jupiter = false;
     bool deepx   = false;
     bool deepy   = false;
@@ -53,9 +55,8 @@ int main(int argc, char *argv[]){
             break;
         case 'p':
             plot = optarg;
-            std::cout << (plot == a) << std::endl;
-            if (plot == "map" || plot == "rms" || 
-                plot == "hit" || plot == "map/rms"){
+            if (plot != "map" && plot != "rms" && 
+                plot != "hit" && plot != "map/rms"){
                 printf("Make sure one of the valid map modes is chosen; 'map', 'rms', 'hit' or 'map/rms'.\n");
                 exit(EXIT_FAILURE);
             }
