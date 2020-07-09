@@ -7,14 +7,111 @@
 # include <iostream>
 # include<cstring>
 # include <math.h>
-# include "H5cpp.h"
+# include "H5Cpp.h"
 
-
-
+#ifndef H5_NO_NAMESPACE
+    using namespace H5;
+#endif
 
 void usage(){
     printf("These are the supported operations:\n");
 }
+
+void readMap(){
+
+    const H5std_string FILE_NAME("co6_good_map.h5");
+    const H5std_string DATASET_freq( "freq" );
+    const H5std_string DATASET_x( "x" );
+    const H5std_string DATASET_y( "y" );
+    const H5std_string DATASET_map( "map" );
+    const H5std_string DATASET_hit( "nhit" );
+    const H5std_string DATASET_rms( "rms" );
+ 
+    H5File file( FILE_NAME, H5F_ACC_RDONLY);
+
+    DataSet data_freq = file.openDataSet( DATASET_freq );
+    DataSet data_x = file.openDataSet( DATASET_x );
+    DataSet data_y = file.openDataSet( DATASET_y );
+    DataSet data_map = file.openDataSet( DATASET_map );
+    DataSet data_hit = file.openDataSet( DATASET_hit );
+    DataSet data_rms = file.openDataSet( DATASET_rms );
+
+    DataSpace dataspace_freq = data_freq.getSpace();
+    DataSpace dataspace_x = data_x.getSpace();
+    DataSpace dataspace_y = data_y.getSpace();
+    DataSpace dataspace_map = data_map.getSpace();
+    DataSpace dataspace_hit = data_hit.getSpace();
+    DataSpace dataspace_rms = data_rms.getSpace();
+    
+    int RANK_freq  = dataspace_freq.getSimpleExtentNdims();
+    int RANK_x  = dataspace_x.getSimpleExtentNdims();
+    int RANK_y  = dataspace_y.getSimpleExtentNdims();
+    int RANK_map  = dataspace_map.getSimpleExtentNdims();
+    int RANK_hit  = dataspace_hit.getSimpleExtentNdims();
+    int RANK_rms  = dataspace_rms.getSimpleExtentNdims();
+
+    hsize_t dims_freq[RANK_freq];
+    hsize_t dims_x[RANK_x];
+    hsize_t dims_y[RANK_y];
+    hsize_t dims_map[RANK_map];
+    hsize_t dims_hit[RANK_hit];
+    hsize_t dims_rms[RANK_rms];
+
+    dataspace_freq.getSimpleExtentDims(dims_freq);
+    dataspace_x.getSimpleExtentDims(dims_x);
+    dataspace_y.getSimpleExtentDims(dims_y);
+    dataspace_map.getSimpleExtentDims(dims_map);
+    dataspace_hit.getSimpleExtentDims(dims_hit);
+    dataspace_rms.getSimpleExtentDims(dims_rms);
+    
+    DataSpace mspace_freq(RANK_freq, dims_freq);
+    DataSpace mspace_x(RANK_x, dims_x);
+    DataSpace mspace_y(RANK_y, dims_y);
+    DataSpace mspace_map(RANK_map, dims_map);
+    DataSpace mspace_hit(RANK_hit, dims_hit);
+    DataSpace mspace_rms(RANK_rms, dims_rms);
+
+    double *freq_arr;
+    double *x_arr;
+    double *y_arr;
+    double *map_arr;
+    double *hit_arr;
+    double *rms_arr;
+    
+    freq_arr = new double[dataspace_freq.getSimpleExtentNpoints()];
+    x_arr    = new double[dataspace_x.getSimpleExtentNpoints()];
+    y_arr    = new double[dataspace_y.getSimpleExtentNpoints()];
+    map_arr  = new double[dataspace_map.getSimpleExtentNpoints()];
+    hit_arr  = new double[dataspace_hit.getSimpleExtentNpoints()];
+    rms_arr  = new double[dataspace_rms.getSimpleExtentNpoints()];
+
+    data_freq.read(freq_arr, PredType::NATIVE_INT, mspace_freq, dataspace_freq );
+    data_x.read(x_arr, PredType::NATIVE_INT, mspace_x, dataspace_x );
+    data_y.read(y_arr, PredType::NATIVE_INT, mspace_y, dataspace_y );
+    data_map.read(map_arr, PredType::NATIVE_INT, mspace_map, dataspace_map );
+    data_hit.read(hit_arr, PredType::NATIVE_INT, mspace_hit, dataspace_hit );
+    data_rms.read(rms_arr, PredType::NATIVE_INT, mspace_rms, dataspace_rms );
+    
+    
+    delete [] freq_arr;
+    delete [] x_arr;
+    delete [] y_arr;
+    delete [] map_arr;
+    delete [] hit_arr;
+    delete [] rms_arr;
+
+
+    /*
+    dataset.read(data_out, PredType::NATIVE_INT, mspace, dataspace );
+    for (int i = 0; i < NX; i++){
+        for (int j = 0; j < NY; j++){
+            std::cout << " " << data_out[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    */
+}
+
 
 int main(int argc, char *argv[]){
     int opt;
@@ -138,8 +235,6 @@ int main(int argc, char *argv[]){
         default:
             abort();
         }
+readMap();
 }
 
-void readMap(char filename){
-    
-}
