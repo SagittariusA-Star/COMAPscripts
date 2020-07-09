@@ -5,6 +5,12 @@
 # include <string>
 # include <vector>
 # include <iostream>
+# include<cstring>
+# include <math.h>
+# include "H5cpp.h"
+
+
+
 
 void usage(){
     printf("These are the supported operations:\n");
@@ -12,10 +18,15 @@ void usage(){
 
 int main(int argc, char *argv[]){
     int opt;
-    int sb = 2;
-    int freq = 30;
-    int sim_numb = 0;
+    std::vector<int> sb_list;
+    std::vector<int> freq_list;
+    std::vector<int> feed_list;
+    int sb;
+    int freq;
     int feed;
+    int list_input;
+
+    int sim_numb = 0;
     int x_index;
     int y_index;
     int number_of_maps;
@@ -24,8 +35,8 @@ int main(int argc, char *argv[]){
     char *infile;
     char *outfile;
     std::string plot;
-    std::string a = "rms";
-    a = "rms";
+    std::string a;
+
     bool jupiter = false;
     bool deepx   = false;
     bool deepy   = false;
@@ -33,22 +44,27 @@ int main(int argc, char *argv[]){
     double scale = 1;
     double rms_lim = 200000;
 
-
+    int n;              // Length of char* lists
     opterr = 0;
 
     while ((opt = getopt(argc, argv, "s:i:p:f:h:d:o:x:y:j:z:w:m:r:l:n:")) != -1)
         switch (opt)
         {
         case 's':
-            sb = atoi(optarg);
-            if (sb == 0){
-                printf("Please provide the number of the side band in 1-base, not 0-base!\n");
-                exit(EXIT_FAILURE);
-            }
-            if (sb > 4){
-                printf("There are only four side bands!\n");
-                exit(EXIT_FAILURE);
-            }
+            n = strlen(optarg);
+            list_input = atoi(optarg);
+            for (int i = n - 1; i >= 0; i--){
+                sb = (list_input / (int) pow(10, i)) % 10;
+                if (sb == 0){
+                    printf("Please provide the number of the side band in 1-base, not 0-base!\n");
+                    exit(EXIT_FAILURE);
+                }
+                else if (sb > 4){
+                    printf("There are only four side bands!\n");
+                    exit(EXIT_FAILURE);
+                }
+                sb_list.push_back(sb);
+            }    
             break;
         case 'i':
             infile = optarg;
