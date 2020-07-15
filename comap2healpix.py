@@ -8,8 +8,8 @@ import getopt
 import textwrap
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from coordinates import _equ2gal
 from astropy_healpix import HEALPix
+from astropy.io import fits 
 
 
 def usage():
@@ -183,7 +183,16 @@ def map2healpix(mapname1, mapname2, mapname3, sb, freq):
     m[px_indices1] = hits[ 0, ...].flatten() # Filling up HEALPix array with hitmaps
     m[px_indices2] = hits[ 1, ...].flatten() 
     m[px_indices3] = hits[ 2, ...].flatten() 
-
+    """
+    lons = np.zeros_like(m)
+    lats = np.zeros_like(m)
+    lons[px_indices1], lons[px_indices2], lons[px_indices3] = lon1, lon2, lon3
+    lats[px_indices1], lats[px_indices2], lats[px_indices3] = lat1, lat2, lat3
+    temp = np.zeros((len(m[np.where(m!=0)]), 3))
+    temp[:, 0] = np.arange(0, len(m))[np.where(m!=0)]
+    temp[:, 1], temp[:, 2] = lons[np.where(m!=0)], lats[np.where(m!=0)] 
+    np.savetxt("comap2healpix.txt", temp, header = "HEALPix number, lon, lat (for some of the hits, where lon/lat are non-zero)")
+    """
     return m
 
 def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
@@ -220,7 +229,6 @@ def savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype):
         hp.mollview(m, cmap = cm.Oranges, coord = "G", min = color_lim[0], max = color_lim[1], 
                     nest = False, title = None, unit = "Hits")
         plt.savefig(outfile)
-
     else:
         print("Please provide either FITS or png file format for final HEALPix map file to be saved!")
         exit()
@@ -253,8 +261,9 @@ def open_and_show_FITS_map(infile, infiletype):
 
 
 if __name__ == "__main__":
-  #savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype)
-  open_and_show_FITS_map(outfile, mapfiletype)
+    savehealpix(infile1, infile2, infile3, outfile, sb, freq, mapfiletype)
+    #open_and_show_FITS_map(outfile, mapfiletype)
+
 
 
 
