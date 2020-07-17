@@ -250,13 +250,13 @@ void MapObjects::read_map(int argc, char *argv[]){
     //freq_arr = new double[dataspace_freq.getSimpleExtentNpoints()];
     map_arr  = new double[dataspace_map.getSimpleExtentNpoints()];
     hit_arr  = new int[dataspace_hit.getSimpleExtentNpoints()];
-    //rms_arr  = new double[dataspace_rms.getSimpleExtentNpoints()];
+    rms_arr  = new double[dataspace_rms.getSimpleExtentNpoints()];
 
     dummy_arr  = new double[dataspace_map.getSimpleExtentNpoints()];
     
     //data_freq.read(freq_arr, PredType::NATIVE_DOUBLE, mspace_freq, dataspace_freq );
     data_hit.read(hit_arr, PredType::NATIVE_INT, mspace_hit, dataspace_hit );
-    //data_rms.read(rms_arr, PredType::NATIVE_DOUBLE, mspace_rms, dataspace_rms );
+    data_rms.read(rms_arr, PredType::NATIVE_DOUBLE, mspace_rms, dataspace_rms );
     data_map.read(map_arr, PredType::NATIVE_DOUBLE, mspace_map, dataspace_map );
     
     file.close();
@@ -291,7 +291,8 @@ void MapObjects::read_map(int argc, char *argv[]){
                 for(int l=0; l < Nx; l++){
                     for(int m=0; m < Ny; m++){
                         int idx = prod2 * i + prod1 * j + prod * k + Ny * l + m;
-                        dummy_arr[idx] = map_arr[idx] + map_arr[idx];
+                        dummy_arr[idx] = (map_arr[idx] / (rms_arr[idx] * rms_arr[idx]) + map_arr[idx] / (rms_arr[idx] * rms_arr[idx]))
+                                        / (1 / (rms_arr[idx] * rms_arr[idx]) + 1 / (rms_arr[idx] * rms_arr[idx]));
                         //if (hit_arr[idx] * hit_arr[idx] >= 0){
                         //}
                         //else{
@@ -316,8 +317,8 @@ MapObjects::~MapObjects()
     delete [] map_arr;
     delete [] dummy_arr;
     delete [] hit_arr;
+    delete [] rms_arr;
     /*
     delete [] freq_arr;
-    delete [] rms_arr;
     */
 }
