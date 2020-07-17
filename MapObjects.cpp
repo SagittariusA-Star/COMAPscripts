@@ -141,16 +141,17 @@ void MapObjects::read_map(int argc, char *argv[]){
     int Nx     = dims_x[0];
     int Ny     = dims_y[0];
     
-    x_arr    = new double[dataspace_x.getSimpleExtentNpoints()];
-    y_arr    = new double[dataspace_y.getSimpleExtentNpoints()];
+    //x_arr    = new double[dataspace_x.getSimpleExtentNpoints()];
+    //y_arr    = new double[dataspace_y.getSimpleExtentNpoints()];
     
-    data_x.read(x_arr, PredType::NATIVE_DOUBLE, mspace_x, dataspace_x );
-    data_y.read(y_arr, PredType::NATIVE_DOUBLE, mspace_y, dataspace_y );
+    //data_x.read(x_arr, PredType::NATIVE_DOUBLE, mspace_x, dataspace_x );
+    //data_y.read(y_arr, PredType::NATIVE_DOUBLE, mspace_y, dataspace_y );
+    /*
     
     if (feed_list.size() == 19 && plot != "feed"){
         Nsb = sb_list.size();
         Nfreq = freq_list.size();
-        /*
+
         const H5std_string DATASET_freq("freq");
         DataSet data_freq = file.openDataSet( DATASET_freq);
         DataSpace dataspace_freq = data_freq.getSpace();
@@ -178,7 +179,6 @@ void MapObjects::read_map(int argc, char *argv[]){
         data_freq.close();
         dataspace_freq.close();
         mspace_freq.close();
-        */
         
         const H5std_string DATASET_map("map_beam");
         DataSet data_map = file.openDataSet( DATASET_map );
@@ -206,11 +206,12 @@ void MapObjects::read_map(int argc, char *argv[]){
         map_arr  = new double[dataspace_map.getSimpleExtentNpoints()];
         data_map.read(map_arr, PredType::NATIVE_DOUBLE, mspace_map, dataspace_map); 
     }
-    /*
+    */
+    
     const H5std_string DATASET_freq("freq");
-    const H5std_string DATASET_map("map_beam");
-    const H5std_string DATASET_hit("nhit_beam");
-    const H5std_string DATASET_rms("rms_beam");
+    const H5std_string DATASET_map("map");
+    const H5std_string DATASET_hit("nhit");
+    const H5std_string DATASET_rms("rms");
 
     DataSet data_freq = file.openDataSet( DATASET_freq );
     DataSet data_map = file.openDataSet( DATASET_map );
@@ -246,17 +247,20 @@ void MapObjects::read_map(int argc, char *argv[]){
     int Nfeed  = dims_map[0];
     int Nfreq  = dims_freq[1];
 
-    freq_arr = new double[dataspace_freq.getSimpleExtentNpoints()];
+    //freq_arr = new double[dataspace_freq.getSimpleExtentNpoints()];
     map_arr  = new double[dataspace_map.getSimpleExtentNpoints()];
     hit_arr  = new int[dataspace_hit.getSimpleExtentNpoints()];
-    rms_arr  = new double[dataspace_rms.getSimpleExtentNpoints()];
+    //rms_arr  = new double[dataspace_rms.getSimpleExtentNpoints()];
 
-    data_freq.read(freq_arr, PredType::NATIVE_DOUBLE, mspace_freq, dataspace_freq );
+    dummy_arr  = new double[dataspace_map.getSimpleExtentNpoints()];
+    
+    //data_freq.read(freq_arr, PredType::NATIVE_DOUBLE, mspace_freq, dataspace_freq );
     data_hit.read(hit_arr, PredType::NATIVE_INT, mspace_hit, dataspace_hit );
-    data_rms.read(rms_arr, PredType::NATIVE_DOUBLE, mspace_rms, dataspace_rms );
+    //data_rms.read(rms_arr, PredType::NATIVE_DOUBLE, mspace_rms, dataspace_rms );
     data_map.read(map_arr, PredType::NATIVE_DOUBLE, mspace_map, dataspace_map );
     
     file.close();
+    /*
     data_freq.close();
     data_x.close();
     data_y.close();
@@ -276,16 +280,44 @@ void MapObjects::read_map(int argc, char *argv[]){
     mspace_hit.close();
     mspace_rms.close();
     */
+    clock_t t = clock();
+    int prod = Nx * Ny;
+    int prod1 = prod * Nfreq;
+    int prod2 =  prod1 * Nsb;
+    int idx;
+    for(int i=0; i < Nfeed; i++){
+        for(int j=0; j < Nsb; j++){
+            for(int k=0; k < Nfreq; k++){
+                for(int l=0; l < Nx; l++){
+                    for(int m=0; m < Ny; m++){
+                        int idx = prod2 * i + prod1 * j + prod * k + Ny * l + m;
+                        dummy_arr[idx] = map_arr[idx] + map_arr[idx];
+                        //if (hit_arr[idx] * hit_arr[idx] >= 0){
+                        //}
+                        //else{
+                        //    dummy_arr[idx] = 0;
+                        //}
+                            
+                    }
+                }
+            }
+        }
+    }
+    t = clock() - t;
+    double time_taken = ((double) t)/ CLOCKS_PER_SEC;
+    printf("Run time in C: %g sec\n", time_taken);
+    
 }
 
 MapObjects::~MapObjects()
 {   
-    delete [] x_arr;
-    delete [] y_arr;
+    //delete [] x_arr;
+    //delete [] y_arr;
     delete [] map_arr;
+    delete [] dummy_arr;
+    delete [] hit_arr;
     /*
     delete [] freq_arr;
-    delete [] hit_arr;
     delete [] rms_arr;
     */
 }

@@ -1,19 +1,11 @@
+import time
 import sys
 import getopt
 import numpy as np
 import h5py as h5
-import matplotlib as mpl
-mpl.use('agg')
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.gridspec as gridspec
-import matplotlib.patches as patches
-from matplotlib import animation, rc
-from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
 import textwrap
 #import FileDialog
-import time
-
+import ctypes
 
 class Atlas:
     def __init__(self):
@@ -21,29 +13,26 @@ class Atlas:
         self.map_mode         = "map"
         self.jk_choices   = ["odde", "dayn", "half", "sdbg"]
         self.jk           = "odde"
-        self.tool_choices   = ["add", "coadd", "sub", "divide", "coaddfeed"]
+        self.jack         = False
+        self.tool_choices   = ["add", "coadd", "subtract", "divide", "coaddfeed, scale"]
         self.tool           = "add"
         self.freq         = "all"
         self.det_list     = np.arange(1,20)
         self.sb_list      = np.arange(1,5)
         self.freq_list    = np.arange(1,65)
         self.outfile      = None
-        self.scale        = 1
+        self.scale       = None
         self.beam        = False
         self.patch1       = ''
         self.patch2       = ''
         self.rms_lim      = 200000.
         self.deepx        = False
         self.deepy        = False
+        #self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared library
         self.infile1      = None
         self.infile2      = None
         self.input()        
-        if self.infile1 != None and self.infile2 == None:
-            self.data     = self.readMap(self.infile1)
-        elif self.infile1 != None and self.infile2 != None:
-            self.data1        = self.readMap(self.infile1)
-            self.data2        = self.readMap(self.infile2)
-        
+        self.operation()
         if self.outfile != None:
             self.writeMap(self.outfile)
         else:
@@ -54,16 +43,22 @@ class Atlas:
             self.usage()
 
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"s:f:m:i:h:d:o:I:r:l:j:bt:", ["sb=", "freq=", "mode=", "infile1=", "help=", "det",
-                                                                                 "out","infile2=","deepx", "deepy", "jk", "beam", "tool"])
+            opts, args = getopt.getopt(sys.argv[1:],"s:f:m:i:h:d:o:I:r:l:j:t:bw:", ["sb=", "freq=", "mode=", "infile1=", "help=", "det",
+                                                                                 "out","infile2=","deepx", "deepy", "jk", "tool", "beam", "scale"])
         except getopt.GetoptError:
             self.usage()
 
         for opt, arg in opts:
             if opt in ("-j", "--jk"):
+                self.jack = False
                 self.jk = arg
                 if self.jk not in self.jk_choices:
                     print("Make sure you have chosen the correct jk choices")                                                                                                   
+                    sys.exit() 
+            elif opt in ("-t", "--tool"):
+                self.tool = arg
+                if self.tool not in self.tool_choices:
+                    print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
             elif opt in ("-b", "--beam"):
                 self.beam = True
@@ -175,7 +170,7 @@ class Atlas:
         print("-l ----> optional --deepy"     + wrapper.fill(m16))
         sys.exit()
 
-    def readMap(self, infile):
+    def readMap(self, infile, mode):
         dfile   = h5.File(infile,'r')
         #self.sim_exist = "map_sim" in dfile
         #self.x       = dfile['x'][:]
@@ -185,38 +180,185 @@ class Atlas:
         freq_end   = self.freq_list[-1] - 1
         sb_start = self.sb_list[0] - 1
         sb_end   = self.sb_list[-1] - 1
+        
         if self.beam:
-            if self.map_mode == "map":
-                print(self.sb_list - 1)
+            if mode == "map":
                 data =  dfile['map_beam'][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                #data =  dfile['map_beam'][0, 10, ...]
-            
-            elif self.map_mode == "hit":      
+                dfile.close()
+                return data
+
+            elif mode == "hit":      
                 data =  dfile['nhit_beam'][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-            
-            elif self.map_mode == "rms":
+                dfile.close()
+                return data
+
+            elif mode == "rms":
                 data =  dfile['rms_beam'][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                dfile.close()
+                return data
         else:
-            if self.map_mode == "map":
+            if mode == "map":
                 data = dfile['map'][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-            elif self.map_mode == "hit":
+                dfile.close()
+                return data
+            
+
+            elif mode == "hit":
                 data  = dfile['nhit'][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-            elif self.map_mode == "rms":
+                dfile.close()
+                return data
+
+            elif mode == "rms":
                 data  = dfile['rms'][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-        dfile.close()
-        return data
+                dfile.close()
+                return data
 
     def writeMap(self, outfile):
+        t = time.time()
         dfile   = h5.File(outfile,'w')
         dfile.create_dataset(self.map_mode, data = self.data)
         dfile.close()
+        print("Run time write: ", time.time() - t, " sec")        
+
+    
+    def operation(self):
+        if self.infile1 != None and self.infile2 == None:
+            self.data     = self.readMap(self.infile1, mode = self.map_mode)
+            
+            if self.jack:
+                pass 
+            else:
+                if self.map_mode == "map":
+                    if self.tool == "coaddfeed" and not self.beam:
+                        rms = self.readMap(self.infile1, mode = "rms")
+                        self.data = self.coaddfeed(self.data, rms)
+                    
+                    elif self.tool == "subtract" and not self.beam:
+                        self.data = self.subtract_two_feeds(self.data)
+                    
+                    elif self.scale != None:
+                        self.data = self.multiply(self.data, self.scale)
+
+                    elif self.tool == "smooth":
+                        print("Smoothing not yet added!")
+                elif self.map_mode == "hit":
+                    if self.tool == "coaddfeed" and not self.beam:
+                        self.data = np.sum(self.data, axis = 0)
+                    
+                    elif self.tool == "subtract" and not self.beam:
+                        self.data = self.subtract_two_feeds(self.data)
+                    
+                    elif self.scale != None:
+                        self.data = self.multiply(self.data, self.scale)
+
+                    elif self.tool == "smooth":
+                        print("Smoothing not yet added!")
+                
+                elif self.map_mode == "rms":
+                    if self.tool == "coaddfeed" and not self.beam:
+
+                        self.data = np.sum(self.data, axis = 0)
+                    
+                    elif self.tool == "subtract" and not self.beam:
+                        self.data = self.subtract_two_feeds(self.data)
+                    
+                    elif self.scale != None:
+                        self.data = self.multiply(self.data, self.scale)
+
+                    elif self.tool == "smooth":
+                        print("Smoothing not yet added!")
+                        
+    
+        elif self.infile1 != None and self.infile2 != None:
+            self.data1 = self.readMap(self.infile1, mode = self.map_mode)
+            self.data2 = self.readMap(self.infile2, mode = self.map_mode)
+            self.hits1 = self.readMap(self.infile1, mode = "hit")
+            self.hits2 = self.readMap(self.infile2, mode = "hit")
+            self.mask  = np.ma.array(self.hits1 * self.hits2 <= 0) 
+            self.data1[self.mask] = 0
+            self.data2[self.mask] = 0
+            if self.map_mode == "map":
+                if self.tool == "add":
+                    self.data = self.add(self.data1, self.data2)
+
+                elif self.tool == "coadd":
+                    rms1 = self.readMap(self.infile1, mode = "rms")
+                    rms2 = self.readMap(self.infile2, mode = "rms")
+                    rms1[self.mask] = 0
+                    rms2[self.mask] = 0
+
+                    self.data = self.coadd(self.data1, rms1,
+                                        self.data2, rms2)
+
+                elif self.tool == "subtract": 
+                    self.data   = self.subtract(self.data1, self.data2)
+
+            elif self.map_mode == "hit":
+                if self.tool == "add":
+                    self.data = self.add(self.hits1, self.hits2)
+
+                elif self.tool == "subtract": 
+                    self.data = self.subtract(self.hits1, self.hits2)
+
+            elif self.map_mode == "rms":
+                if self.tool == "add":
+                    self.data = self.add_rms(self.data1, self.data2)
+
+                elif self.tool == "subtract": 
+                    self.data = self.subtract_rms(self.data_map1, self.data_map2)
+
+    def add(self, data1, data2):
+        return data1 + data2
+    
+    def subtract(self, data1, data2):
+        return map1 - map2
+
+    def multiply(self, data, factor):
+        return factor * data
+
+    def divide(self, map, rms):
+        return map / rms
+    
+    def coadd(self, map1, map2, rms1, rms2):
+        var1 = np.square(rms1)
+        var2 = np.square(rms2)
+        var_inv = 1/var1 + 1/var2
+        coadded = self.divide(map1, var1) + self.divide(map2, var2)
+        coadded /= var_inv
+        return coadded
+
+    def add_rms(self, rms1, rms2):
+        var_inv1 = 1 / np.square(rms1)
+        var_inv2 = 1 / np.square(rms2)
+        sum = var_inv1 + var_inv2 
+        sum = np.sqrt(sum)
+        return sum
+
+    def subtract_rms(self, rms1, rms2):
+        var_inv1 = 1 / np.square(rms1)
+        var_inv2 = 1 / np.square(rms2)
+        sum = var_inv1 - var_inv2 
+        sum = np.sqrt(sum)
+        return sum
+    
+    def coaddfeed(self, data, rms):
+        var_inv = 1 / np.square(rms)
+        coadded = np.sum(self.divide(map, var), axis = 0)
+        coadded /= np.sum(var_inv, axis = 0)
+        return coadded
+
+    def coaddfeed_rms(self, rms):
+        var_inv = 1 / np.square(rms)
+        coadded = np.sum(var_inv, axis = 0)
+        return coadded
+
+
+    def subtract_two_feeds(self, data):
+        return data[0, ...] - data[1, ...]
+    
 
 if __name__ == "__main__":
     map1 = Atlas()
-    data = map1.data
-    start = time.time()
-    data = np.sum(data + data, axis = 0) / np.sum(data, axis = 0)
-    print("Run time: ", time.time() - start, " sek ", data.shape)
 
 
 

@@ -72,6 +72,8 @@ class MapObjects {
         double *rms_arr;
         int    *hit_arr;
 
+        double *dummy_arr;
+
         int Nsb;   
         int Nfeed; 
         int Nfreq; 
