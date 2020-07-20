@@ -178,6 +178,7 @@ class Atlas:
         sb_end   = self.sb_list[-1] - 1
         if self.jack:
             dname = "jackknives/" + mode + "_" + self.jk
+            print(dname)
             if self.jk == "dayn" or self.jk == "half":                
                 data0 = dfile[dname][0, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 data1 = dfile[dname][1, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
@@ -201,44 +202,69 @@ class Atlas:
                 return data
                 
     def writeMap(self, outfile):
-        t = time.time()
-        dfile   = h5.File(outfile,'w')
-        dfile.create_dataset(self.map_mode, data = self.data)
+        if self.jack:
+            dname = "jackknives/" + mode + "_" + self.jk
+        else:
+            if self.beam:
+                dname = self.map_mode + "_coadd"
+            else:
+                dname = self.map_mode
+        
+        dfile   = h5.File(outfile,'a')
+        
+        if dname in dfile:
+            data = dfile[dname]
+            data[...] = self.data
+        else:
+            dfile.create_dataset(dname, data = self.data)
         dfile.close()
-        print("Run time write: ", time.time() - t, " sec")        
 
-    
     def operation(self):
         if self.infile1 != None and self.infile2 == None:
             if self.jack:
                 self.data_jk0, self.data_jk1 = self.readMap(self.infile1,
                                                             mode = self.map_mode) 
-                self.hits_jk0, self.hits_jk0 = self.readMap(self.infile1, mode = "nhit")
-                self.mask  = np.ma.array(self.hits_jk0 * self.hits_jk1 <= 0) 
-                self.data_jk0[self.mask] = 0
-                self.data_jk1[self.mask] = 0
+                self.hits_jk0, self.hits_jk1 = self.readMap(self.infile1, mode = "nhit")
+                self.mask = self.hits_jk0 * self.hits_jk1 > 0
+                self.data_jk0 = np.where(self.mask, self.data_jk0, 0)
+                self.data_jk1 = np.where(self.mask, self.data_jk1, 0)
                 
                 if self.map_mode == "map":
                     if self.tool == "add":
                         self.data = self.add(self.data_jk0, self.data_jk1)
 
                     elif self.tool == "coadd":
-                        rms_jk0, rms_jk0 = self.readMap(self.infile1, mode = "rms")
-                        rms1[self.mask] = 0
-                        rms2[self.mask] = 0
-
-                        self.data = self.coadd(self.data1, rms1,
-                                            self.data2, rms2)
+                        rms_jk0, rms_jk1 = self.readMap(self.infile1, mode = "rms")
+                        self.data = np.zeros_like(rms_jk0)
+                        self.data[self.mask] = self.coadd(self.data_jk0[self.mask], 1 / rms_jk0[self.mask],
+                                                          self.data_jk1[self.mask], 1 / rms_jk1[self.mask])
 
                     elif self.tool == "subtract": 
-                        self.data   = self.subtract(self.data1, self.data2)
+                        self.data   = self.subtract(self.data_jk0, self.data_jk1)
     
+                elif self.map_mode == "nhit":
+                    if self.tool == "add":
+                        self.data = self.add(self.hits_jk0, self.hits_jk1)
+
+                    elif self.tool == "subtract": 
+                        self.data = self.subtract(self.hits_jk0, self.hits_jk1)
+
+                elif self.map_mode == "rms":
+                    self.data = np.zeros_like(self.data_jk0)
+                    if self.tool == "add":
+                        self.data[self.mask] = self.add_rms(1 / self.data_jk0[self.mask], 
+                                                            1 / self.data_jk1[self.mask])
+
+                    elif self.tool == "subtract": 
+                        self.data[self.mask] = self.subtract_rms(1 / self.data_jk0[self.mask], 
+                                                                 1 / self.data_jk1[self.mask])
+
             else:
                 self.data     = self.readMap(self.infile1, mode = self.map_mode)
                 if self.map_mode == "map":
                     if self.tool == "coaddfeed" and not self.beam:
                         rms = self.readMap(self.infile1, mode = "rms")
-                        self.data = self.coaddfeed(self.data, rms)
+                        self.data = self.coaddfeed(self.data, 1 / rms)
                     
                     elif self.tool == "subtract" and not self.beam:
                         self.data = self.subtract_two_feeds(self.data)
@@ -248,6 +274,7 @@ class Atlas:
 
                     elif self.tool == "smooth":
                         print("Smoothing not yet added!")
+
                 elif self.map_mode == "nhit":
                     if self.tool == "coaddfeed" and not self.beam:
                         self.data = np.sum(self.data, axis = 0)
@@ -274,17 +301,15 @@ class Atlas:
                     elif self.tool == "smooth":
                         print("Smoothing not yet added!")
                         
-    
         elif self.infile1 != None and self.infile2 != None:
             self.data1 = self.readMap(self.infile1, mode = self.map_mode)
             self.data2 = self.readMap(self.infile2, mode = self.map_mode)
             self.hits1 = self.readMap(self.infile1, mode = "nhit")
             self.hits2 = self.readMap(self.infile2, mode = "nhit")
-            self.mask = self.hits1 * self.hits2 >= 0
+            self.mask = self.hits1 * self.hits2 > 0
             self.data1 = np.where(self.mask, self.data1, 0)
             self.data2 = np.where(self.mask, self.data2, 0)
 
-                
             if self.map_mode == "map":
                 if self.tool == "add":
                     self.data = self.add(self.data1, self.data2)
@@ -292,13 +317,9 @@ class Atlas:
                 elif self.tool == "coadd":
                     rms1 = self.readMap(self.infile1, mode = "rms")
                     rms2 = self.readMap(self.infile2, mode = "rms")
-                    print(np.sum(self.mask), np.sum(rms1 == 0), np.sum(rms2 == 0))
-                    inv_rms1 = np.where(self.mask, 1 / rms1, 0)
-                    rms1[self.mask] = 0
-                    rms2[self.mask] = 0
-
-                    self.data = self.coadd(self.data1, rms1,
-                                        self.data2, rms2)
+                    self.data = np.zeros_like(rms1)
+                    self.data[self.mask] = self.coadd(self.data1[self.mask], 1 / rms1[self.mask],
+                                                      self.data2[self.mask], 1 / rms2[self.mask])
 
                 elif self.tool == "subtract": 
                     self.data   = self.subtract(self.data1, self.data2)
@@ -311,11 +332,13 @@ class Atlas:
                     self.data = self.subtract(self.hits1, self.hits2)
 
             elif self.map_mode == "rms":
-                if self.tool == "add":
-                    self.data = self.add_rms(self.data1, self.data2)
-
+                self.data = np.zeros_like(self.data1)
+                if self.tool == "coadd":
+                    self.data[self.mask] = self.add_rms(1 / self.data1[self.mask],
+                                                        1 / self.data2[self.mask])
                 elif self.tool == "subtract": 
-                    self.data = self.subtract_rms(self.data_map1, self.data_map2)
+                    self.data[self.mask] = self.subtract_rms(1 / self.data1[self.mask], 
+                                                             1 / self.data2[self.mask])
 
     def add(self, data1, data2):
         return data1 + data2
@@ -326,50 +349,48 @@ class Atlas:
     def multiply(self, data, factor):
         return factor * data
 
-    def divide(self, map, var):
-        return np.nan_to_num(map / var)
-    
-    def coadd(self, map1, map2, rms1, rms2):
-        var1 = np.square(rms1)
-        var2 = np.square(rms2)
-        var_inv = 1/var1 + 1/var2
-        coadded = self.divide(map1, var1) + self.divide(map2, var2)
+    def coadd(self, map1, map2, inv_rms1, inv_rms2):
+        inv_var1 = np.square(inv_rms1)
+        inv_var2 = np.square(inv_rms2)
+        var_inv = inv_var1 + inv_var2
+        coadded = map1 * inv_rms1 + map2 * inv_rms2
         coadded /= var_inv
-        return np.nan_to_num(coadded)
+        return coadded
 
-    def add_rms(self, rms1, rms2):
-        var_inv1 = 1 / np.square(rms1)
-        var_inv2 = 1 / np.square(rms2)
-        sum = var_inv1 + var_inv2 
+    def add_rms(self, inv_rms1, inv_rms2):
+        inv_var1 = np.square(inv_rms1)
+        inv_var2 = np.square(inv_rms2)
+        sum = inv_var1 + inv_var2 
         sum = np.sqrt(sum)
         print(np.sum(np.isnan(sum)))
-        return np.nan_to_num(sum)
+        return sum
 
-    def subtract_rms(self, rms1, rms2):
-        var_inv1 = 1 / np.square(rms1)
-        var_inv2 = 1 / np.square(rms2)
+    def subtract_rms(self, inv_rms1, inv_rms2):
+        var_inv1 = np.square(inv_rms1)
+        var_inv2 = np.square(inv_rms2)
         sum = var_inv1 - var_inv2 
         sum = np.sqrt(sum)
         return sum
     
-    def coaddfeed(self, data, rms):
-        var_inv = 1 / np.square(rms)
-        coadded = np.sum(self.divide(map, var), axis = 0)
-        coadded /= np.sum(var_inv, axis = 0)
+    def coaddfeed(self, data, inv_rms):
+        inv_var = np.square(inv_rms)
+        coadded = np.sum(map * inv_var, axis = 0)
+        coadded /= np.sum(inv_var, axis = 0)
         return coadded
 
-    def coaddfeed_rms(self, rms):
-        var_inv = 1 / np.square(rms)
-        coadded = np.sum(var_inv, axis = 0)
+    def coaddfeed_rms(self, inv_rms):
+        inv_var = np.square(inv_rms)
+        coadded = np.sum(inv_var, axis = 0)
         return coadded
-
 
     def subtract_two_feeds(self, data):
         return data[0, ...] - data[1, ...]
     
 
 if __name__ == "__main__":
+    t = time.time()
     map = Atlas()
+    print("Run time: ", time.time() - t, " sec")
 
 
 
