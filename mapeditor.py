@@ -21,6 +21,8 @@ class Atlas:
         self.outfile      = None
         self.scale       = None
         self.beam        = False
+        self.full        = False
+        self.everything  = False 
         self.patch1       = ''
         self.patch2       = ''
         self.rms_lim      = 200000.
@@ -33,7 +35,10 @@ class Atlas:
         self.input()    
         if self.outfile == None:
             print("To save result to outfile, please provide a valid outfile name!")
-            sys.exit()    
+            sys.exit() 
+        if not self.full and not self.beam and not self.jack:
+            self.everything = True
+
         self.operation()
         self.dfile1.close()
         self.dfile2.close()
@@ -44,8 +49,8 @@ class Atlas:
             self.usage()
 
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:r:l:j:t:bw:a:", ["sb=", "freq=", "infile1=", "help=", "det",
-                                                                                 "out","infile2=","deepx", "deepy", "jk", "tool", "beam", "scale","access"])
+            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:r:l:j:t:bw:a::F", ["sb=", "freq=", "infile1=", "help=", "det",
+                                                                                 "out","infile2=","deepx", "deepy", "jk", "tool", "beam", "scale","access", "full"])
         except getopt.GetoptError:
             self.usage()
 
@@ -65,6 +70,8 @@ class Atlas:
                     sys.exit() 
             elif opt in ("-b", "--beam"):
                 self.beam = True
+            elif opt in ("-F", "--full"):
+                self.full = True
             elif opt in ("-a", "--overwrite"):
                 self.access = arg
             elif opt in ("-o", "--out"):
@@ -174,7 +181,6 @@ class Atlas:
         sys.exit()
 
     def readMap(self, first_file = True, jackmode = "odde"):
-        t = time.time()
         if first_file:
             dfile = self.dfile1
         else:
@@ -204,45 +210,10 @@ class Atlas:
                 map =  dfile["map"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 nhit =  dfile["nhit"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 rms =  dfile["rms"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-        self.time += time.time() - t
-        #print("Run time Read: ", time.time() - t)
         return map, nhit, rms
-
-        """
-        dfile   = h5.File(infile,'r')
-        freq_start = self.freq_list[0] - 1
-        freq_end   = self.freq_list[-1] - 1
-        sb_start = self.sb_list[0] - 1
-        sb_end   = self.sb_list[-1] - 1
-        if self.jack:
-            dname = "jackknives/" + mode + "_" + self.jk
-            print(dname)
-            if self.jk == "dayn" or self.jk == "half":                
-                data0 = dfile[dname][0, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                data1 = dfile[dname][1, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                
-            elif self.jk == "odde" or self.jk == "sdlb":
-                data0 = dfile[dname][0, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                data1 = dfile[dname][1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-            
-            dfile.close()
-            return data0, data1
-        else:
-            dname = mode
-            if self.beam:
-                dname += "_beam"
-                data =  dfile[dname][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                dfile.close()
-                return data
-            else:
-                data =  dfile[dname][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                dfile.close()
-                return data
-        """
-                
-    def writeMap(self, jackmode = "odde"):
-        t = time.time()
-        if self.jack:
+        
+    def writeMap(self, jackmode = None):
+        if jackmode != None:
             map_name    = "jackknives/map_" + jackmode
             nhit_name   = "jackknives/nhit_" + jackmode
             rms_name    = "jackknives/rms_" + jackmode
@@ -278,84 +249,39 @@ class Atlas:
                 self.ofile.create_dataset(map_name, data = self.map)
                 self.ofile.create_dataset(nhit_name, data = self.nhit)
                 self.ofile.create_dataset(rms_name, data = self.rms)
-        self.time += time.time() - t
-        #print("Run time Write: ", time.time() - t, "\n")
-        
         
     def operation(self):                
         if self.infile1 != None and self.infile2 != None:
             if self.jack:
-                self.time = 0
                 for jack in self.jk:
                     self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
                     self.map2, self.nhit2, self.rms2 = self.readMap(False, jack)
-                    t = time.time()
-                    
-                    self.mask = self.nhit1 * self.nhit2 > 0
-                    self.map1 = np.where(self.mask, self.map1, 0)
-                    self.map2 = np.where(self.mask, self.map2, 0)
-                    self.nhit1 = np.where(self.mask, self.nhit1, 0)
-                    self.nhit2 = np.where(self.mask, self.nhit2, 0)
-                    self.inv_rms1 = np.where(self.mask, 1 / self.rms1, 0)
-                    self.inv_rms2 = np.where(self.mask, 1 / self.rms2, 0)
-                    print("Mask time: ", time.time() - t)
-                    
-                    self.time += time.time() - t
                     
                     if self.tool == "coadd":
-                        self.map = np.zeros_like(self.map1)
-                        self._map = np.zeros_like(self.map1)
-                        self._map[self.mask] = self.coadd(self.map1[self.mask], self.inv_rms1[self.mask],
-                                                        self.map2[self.mask], self.inv_rms2[self.mask])
-                        self.nhit = self.add(self.nhit1, self.nhit2)
-                        self._nhit = self.add(self.nhit1, self.nhit2)
-                        self.rms  = self.add_rms(self.inv_rms1, self.inv_rms2) 
-                        self._rms  = self.add_rms(self.inv_rms1, self.inv_rms2) 
-                        if len(self.map1.shape) == 5:   
-                            float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-                            int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-                            self.maputilslib.coadd5D.argtypes = [float32_array5, int32_array5, float32_array5,
-                                                                float32_array5, int32_array5, float32_array5,
-                                                                float32_array5, int32_array5, float32_array5,
-                                                                ctypes.c_int, ctypes.c_int, ctypes.c_int,
-                                                                ctypes.c_int, ctypes.c_int]
-                            n0, n1, n2, n3, n4 = self.map1.shape
-                            self.map = np.zeros_like(self.map1, dtype = ctypes.c_float)
-                            self.nhit = np.zeros_like(self.nhit1, dtype = ctypes.c_int)
-                            self.rms = np.zeros_like(self.rms1, dtype = ctypes.c_float)
-                            start = time.time()
-                            self.maputilslib.coadd5D(self.map1, self.nhit1, self.rms1,
-                                                     self.map2, self.nhit2, self.rms2, 
-                                                     self.map, self.nhit, self.rms,
-                                                     n0, n1, n2, n3, n4)
-                            print("Run time outside C: ", time.time() - start, " sec")
-                            print(np.allclose(np.nan_to_num(self._rms, posinf = 0, neginf=0), self.rms))
-                            print(self.rms1[1, 3, 63, 79, 30], self._rms[1, 3, 63, 79, 30] - self.rms[1, 3, 63, 79, 30])
+                        if len(self.map1.shape) == 6:
+                            self.C_coadd6D(self.map1, self.nhit1, self.rms1,
+                                           self.map2, self.nhit2, self.rms2)  
                 
+                        elif len(self.map1.shape) == 5: 
+                            self.C_coadd5D(self.map1, self.nhit1, self.rms1,
+                                           self.map2, self.nhit2, self.rms2)  
+
                     elif self.tool == "subtract": 
                         self.map   = self.subtract(self.map1, self.map2)
                         self.nhit   = self.subtract(self.nhit1, self.nhit2)
                         self.rms   = self.subtract_rms(self.rms1, self.rms2)
                     self.writeMap(jack)
-                print("Run time jack-loop: ", self.time)   
             else:
-                self.map1, self.nhit1, rms1 = self.readMap(True)
-                self.map2, self.nhit2, rms2 = self.readMap(False)
-                self.mask = self.nhit1 * self.nhit2 > 0
-                
-                self.map1 = np.where(self.mask, self.map1, 0)
-                self.map2 = np.where(self.mask, self.map2, 0)
-                self.nhit1 = np.where(self.mask, self.nhit1, 0)
-                self.nhit2 = np.where(self.mask, self.nhit2, 0)
-                self.inv_rms1 = np.where(self.mask, 1 / rms1, 0)
-                self.inv_rms2 = np.where(self.mask, 1 / rms2, 0)
+                self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                self.map2, self.nhit2, self.rms2 = self.readMap(False)
                 
                 if self.tool == "coadd":
-                    self.map = np.zeros_like(self.map1)
-                    self.map[self.mask] = self.coadd(self.map1[self.mask], self.inv_rms1[self.mask],
-                                                      self.map2[self.mask], self.inv_rms2[self.mask])
-                    self.nhit = self.add(self.nhit1, self.nhit2)
-                    self.rms  = self.add_rms(self.inv_rms1, self.inv_rms2) 
+                    if self.beam:
+                        self.C_coadd4D(self.map1, self.nhit1, self.rms1,
+                                       self.map2, self.nhit2, self.rms2)
+                    else:
+                        self.C_coadd5D(self.map1, self.nhit1, self.rms1,
+                                       self.map2, self.nhit2, self.rms2)
 
                 elif self.tool == "subtract": 
                     self.map   = self.subtract(self.map1, self.map2)
@@ -414,15 +340,69 @@ class Atlas:
         return factor * data
 
     def coadd(self, map1, map2, inv_rms1, inv_rms2):
-        t = time.time()
         inv_var1 = np.square(inv_rms1)
         inv_var2 = np.square(inv_rms2)
         var_inv = inv_var1 + inv_var2
-        coadded = map1 * inv_rms1 + map2 * inv_rms2
+        coadded = map1 * inv_var1 + map2 * inv_var2
         coadded /= var_inv
-        self.time += time.time() - t
-        #print("Run time Coadd: ", time.time() - t)
         return coadded
+
+    def C_coadd4D(self, map1, nhit1, rms1,
+                        map2, nhit2, rms2):
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
+        self.maputilslib.coadd4D.argtypes = [float32_array4, int32_array4, float32_array4,
+                                             float32_array4, int32_array4, float32_array4,
+                                             float32_array4, int32_array4, float32_array4,
+                                             ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                             ctypes.c_int]
+        n0, n1, n2, n3  = self.map1.shape
+        self.map        = np.zeros_like(map1,   dtype = ctypes.c_float)
+        self.nhit       = np.zeros_like(nhit1,  dtype = ctypes.c_int)
+        self.rms        = np.zeros_like(rms1,   dtype = ctypes.c_float)
+        self.maputilslib.coadd4D(map1, nhit1, rms1,
+                                 map2, nhit2, rms2, 
+                                 self.map, self.nhit, self.rms,
+                                 n0, n1, n2, n3)
+    
+
+    def C_coadd5D(self, map1, nhit1, rms1,
+                        map2, nhit2, rms2):
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
+        self.maputilslib.coadd5D.argtypes = [float32_array5, int32_array5, float32_array5,
+                                            float32_array5, int32_array5, float32_array5,
+                                            float32_array5, int32_array5, float32_array5,
+                                            ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                                            ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3, n4 = self.map1.shape
+        self.map = np.zeros_like(map1, dtype = ctypes.c_float)
+        self.nhit = np.zeros_like(nhit1, dtype = ctypes.c_int)
+        self.rms = np.zeros_like(rms1, dtype = ctypes.c_float)
+        self.maputilslib.coadd5D(map1, nhit1, rms1,
+                                 map2, nhit2, rms2, 
+                                 self.map, self.nhit, self.rms,
+                                 n0, n1, n2, n3, n4)
+                            
+    def C_coadd6D(self, map1, nhit1, rms1,
+                        map2, nhit2, rms2):
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
+        self.maputilslib.coadd6D.argtypes = [float32_array6, int32_array6, float32_array6,
+                                            float32_array6, int32_array6, float32_array6,
+                                            float32_array6, int32_array6, float32_array6,
+                                            ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                                            ctypes.c_int, ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3, n4, n5 = self.map1.shape
+        self.map = np.zeros_like(map1, dtype = ctypes.c_float)
+        self.nhit = np.zeros_like(nhit1, dtype = ctypes.c_int)
+        self.rms = np.zeros_like(rms1, dtype = ctypes.c_float)
+        self.maputilslib.coadd6D(map1,     nhit1,     rms1,
+                                 map2,     nhit2,     rms2, 
+                                 self.map, self.nhit, self.rms,
+                                 n0,       n1,        n2, 
+                                 n3,       n4,        n5)
+                            
 
     def add_rms(self, inv_rms1, inv_rms2):
         inv_var1 = np.square(inv_rms1)
@@ -435,7 +415,7 @@ class Atlas:
         var_inv1 = np.square(inv_rms1)
         var_inv2 = np.square(inv_rms2)
         sum = var_inv1 - var_inv2 
-        sum = np.sqrt(sum)
+        sum = 1 / np.sqrt(sum)
         return sum
     
     def coaddfeed(self, data, inv_rms):
