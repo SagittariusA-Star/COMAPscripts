@@ -4,13 +4,12 @@ import getopt
 import numpy as np
 import h5py as h5
 import textwrap
-#import FileDialog
 import ctypes
 
 class Atlas:
     def __init__(self):
         self.jk_choices   = ["odde", "dayn", "half", "sdlb"]
-        self.jk           = ["odde"]
+        self.jk           = None
         self.jack         = False
         self.tool_choices   = ["coadd", "subtract"]
         self.tool           = "coadd"
@@ -55,8 +54,8 @@ class Atlas:
             self.usage()
 
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:r:l:j:t:bw:a::F", ["sb=", "freq=", "infile1=", "help=", "det",
-                                                                                 "out","infile2=","deepx", "deepy", "jk", "tool", "beam", "scale","access", "full"])
+            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:r:l:j:t:bw:a::F", ["sb=", "freq=", "infile1=", "help", "de=t",
+                                                                                      "out=","infile2=","deepx", "deepy", "jk=", "tool=", "beam", "scale=","access=", "full"])
         except getopt.GetoptError:
             self.usage()
 
@@ -282,27 +281,21 @@ class Atlas:
                         if self.tool == "coadd":
                             if len(self.map1.shape) == 6:
                                 self.C_coadd6D(self.map1, self.nhit1, self.rms1,
-                                              self.map2, self.nhit2, self.rms2)  
+                                               self.map2, self.nhit2, self.rms2)  
                     
                             elif len(self.map1.shape) == 5: 
                                 self.C_coadd5D(self.map1, self.nhit1, self.rms1,
-                                              self.map2, self.nhit2, self.rms2)  
+                                               self.map2, self.nhit2, self.rms2)  
 
                         elif self.tool == "subtract": 
-                            self._map   = self.subtract(self.map1, self.map2)
-                            self._nhit   = self.subtract(self.nhit1, self.nhit2)
-                            self._rms   = self.add_rms(self.rms1, self.rms2)
                             if len(self.map1.shape) == 6:
                                 self.C_subtract6D(self.map1, self.nhit1, self.rms1,
-                                              self.map2, self.nhit2, self.rms2)  
+                                                  self.map2, self.nhit2, self.rms2)  
                             
                             if len(self.map1.shape) == 5:
                                 self.C_subtract5D(self.map1, self.nhit1, self.rms1,
-                                              self.map2, self.nhit2, self.rms2) 
-                            print(np.allclose(self._map, self.map))
-                            print(np.allclose(self._nhit, self.nhit))
-                            print(np.allclose(self._rms, self.rms))
-                        self.writeMap(jack)
+                                                  self.map2, self.nhit2, self.rms2) 
+                            self.writeMap(jack)
                 
                 self.full = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
@@ -332,8 +325,9 @@ class Atlas:
                     self.nhit   = self.subtract(self.nhit1, self.nhit2)
                     self.rms   = self.add_rms(self.rms1, self.rms2)
                 self.writeMap()
+                self.beam = False
             
-            elif self.jack:
+            if self.jack:
                 for jack in self.jk:
                     self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
                     self.map2, self.nhit2, self.rms2 = self.readMap(False, jack)
@@ -357,23 +351,39 @@ class Atlas:
                                         self.map2, self.nhit2, self.rms2) 
                     self.writeMap(jack)
 
-            elif self.full or self.beam:
+            if self.full:
+                _beam = self.beam
+                self.beam = False
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 self.map2, self.nhit2, self.rms2 = self.readMap(False)
                 
                 if self.tool == "coadd":
-                    if self.beam:
-                        self.C_coadd4D(self.map1, self.nhit1, self.rms1,
-                                       self.map2, self.nhit2, self.rms2)
-                    else:
-                        self.C_coadd5D(self.map1, self.nhit1, self.rms1,
-                                       self.map2, self.nhit2, self.rms2)
+                    self.C_coadd5D(self.map1, self.nhit1, self.rms1,
+                                    self.map2, self.nhit2, self.rms2)
+    
+                elif self.tool == "subtract": 
+                    self.C_subtract5D(self.map1, self.nhit1, self.rms1,
+                                      self.map2, self.nhit2, self.rms2)  
+                        
+                self.writeMap()
+                self.beam = _beam
+        
+            if self.beam:
+                _full = self.full
+                self.full = False
+                self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                self.map2, self.nhit2, self.rms2 = self.readMap(False)
+                
+                if self.tool == "coadd":
+                    self.C_coadd4D(self.map1, self.nhit1, self.rms1,
+                                    self.map2, self.nhit2, self.rms2)
 
                 elif self.tool == "subtract": 
-                    self.map   = self.subtract(self.map1, self.map2)
-                    self.nhit   = self.subtract(self.nhit1, self.nhit2)
-                    self.rms   = self.subtract_rms(self.rms1, self.rms2)
+                    self.C_subtract4D(self.map1, self.nhit1, self.rms1,
+                                      self.map2, self.nhit2, self.rms2)  
+                        
                 self.writeMap()
+                self.full = _full
         self.writeMap(write_the_rest = True)
 
     def add(self, data1, data2):
