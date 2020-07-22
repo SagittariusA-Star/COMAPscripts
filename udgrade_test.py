@@ -29,7 +29,6 @@ m_h = m_h.reshape(6, 6, 6, 6, 6).astype(ctypes.c_float)
 n_h = np.arange(6 * 6 * 6 * 6 * 6)
 n_h = m_h.reshape(6, 6, 6, 6, 6).astype(ctypes.c_int)
 
-
 r_h = np.arange(6 * 6 * 6 * 6 * 6)
 r_h = m_h.reshape(6, 6, 6, 6, 6).astype(ctypes.c_float)
 
@@ -57,8 +56,8 @@ maputilslib.dgrade5D(m_h, n_h, r_h,
                      n0, n1, n2,
                      n3, n4, N3, N4, num)
 print("second")
-print(n_h[0, 0, 0, :, :])
-print(n_l[0, 0, 0, :, :])
+print(m_h[0, 0, 0, :, :])
+print(m_l[0, 0, 0, :, :])
 print(np.allclose(n_h, a))
 print(np.allclose(n_l, b))
 

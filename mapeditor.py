@@ -11,7 +11,7 @@ class Atlas:
         self.jk_choices   = ["odde", "dayn", "half", "sdlb"]
         self.jk           = None
         self.jack         = False
-        self.tool_choices   = ["coadd", "subtract"]
+        self.tool_choices   = ["coadd", "subtract", "dgrade"]
         self.tool           = "coadd"
         self.freq         = "all"
         self.det_list     = np.arange(1,20)
@@ -40,13 +40,18 @@ class Atlas:
             sys.exit()
         if not self.full and not self.beam and not self.jack:
             self.everything = True
-            if "jackknives" in self.dfile1 and "jackknives" in self.dfile2:
-                nhit_lst = [i for i in self.dfile1["jackknives"].keys() if "nhit_" in i]
-                self.jk =  [i.split("_")[1] for i in nhit_lst]
-
+            if self.infile1 != None and self.infile2 != None:
+                if "jackknives" in self.dfile1 and "jackknives" in self.dfile2:
+                    nhit_lst = [i for i in self.dfile1["jackknives"].keys() if "nhit_" in i]
+                    self.jk =  [i.split("_")[1] for i in nhit_lst]
+            else: 
+                if "jackknives" in self.dfile1:
+                    nhit_lst = [i for i in self.dfile1["jackknives"].keys() if "nhit_" in i]
+                    self.jk =  [i.split("_")[1] for i in nhit_lst]
         self.operation()
         self.dfile1.close()
-        self.dfile2.close()
+        if self.infile1 != None and self.infile2 != None:
+            self.dfile2.close() 
         self.ofile.close()
 
     def input(self):
@@ -69,7 +74,22 @@ class Atlas:
                         print("Make sure you have chosen the correct jk choices")                                                                                                   
                         sys.exit() 
             elif opt in ("-t", "--tool"):
-                self.tool = arg
+                if "dgrade" in arg.split(",") and len(arg.split(",")) == 2:
+                    if self.infile1 != None and self.infile2 != None:
+                        print("Tool dgrade is only supported for single input file!")
+                        sys.exit()
+                    self.tool, self.merge_num = arg.split(",")
+                    self.merge_num = int(self.merge_num)
+                    n_x = np.array(self.dfile1["n_x"])
+                    n_y = np.array(self.dfile1["n_y"])
+                    if n_x % self.merge_num != 0 or n_y % self.merge_num != 0: 
+                        print("Make sure that the pixel grid resolution of input map file is a multiple of the number of merging pixels!")
+                        sys.exit()
+                elif "dgrade" in arg.split(",") and len(arg.split(",")) != 2:
+                    print("To use dgrade tool please provide a number of pixels to merge along each axis; e.g. -t dgrade,2\n(don't forget the comma!!)!")
+                    sys.exit()
+                else:
+                    self.tool = arg
                 if self.tool not in self.tool_choices:
                     print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
@@ -264,11 +284,12 @@ class Atlas:
                 if name not in self.ofile.keys() and name not in data_not_to_copy:
                     self.ofile.create_dataset(name, data = self.dfile1[name])    
             
-            if "jackknives" in self.dfile1 and "jackknives" in self.dfile2 and "jackknives" in self.ofile:
-                for name in self.dfile1["jackknives"].keys():
-                    if name not in self.ofile["jackknives"].keys() and name not in jk_data_not_to_copy:
-                        self.ofile.create_dataset("jackknives/" + name, 
-                                                    data = self.dfile1["jackknives/" + name])   
+            if self.infile1 != None and self.infile2 != 0:
+                if "jackknives" in self.dfile1 and "jackknives" in self.dfile2 and "jackknives" in self.ofile:
+                    for name in self.dfile1["jackknives"].keys():
+                        if name not in self.ofile["jackknives"].keys() and name not in jk_data_not_to_copy:
+                            self.ofile.create_dataset("jackknives/" + name, 
+                                                        data = self.dfile1["jackknives/" + name])   
 
     def operation(self):                
         if self.infile1 != None and self.infile2 != None:
@@ -295,7 +316,7 @@ class Atlas:
                             if len(self.map1.shape) == 5:
                                 self.C_subtract5D(self.map1, self.nhit1, self.rms1,
                                                   self.map2, self.nhit2, self.rms2) 
-                            self.writeMap(jack)
+                        self.writeMap(jack)
                 
                 self.full = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
@@ -321,9 +342,9 @@ class Atlas:
                                    self.map2, self.nhit2, self.rms2)
 
                 elif self.tool == "subtract": 
-                    self.map   = self.subtract(self.map1, self.map2)
-                    self.nhit   = self.subtract(self.nhit1, self.nhit2)
-                    self.rms   = self.add_rms(self.rms1, self.rms2)
+                    self.C_subtract4D(self.map1, self.nhit1, self.rms1,
+                                      self.map2, self.nhit2, self.rms2)  
+
                 self.writeMap()
                 self.beam = False
             
@@ -384,7 +405,72 @@ class Atlas:
                         
                 self.writeMap()
                 self.full = _full
-        self.writeMap(write_the_rest = True)
+            self.writeMap(write_the_rest = True)
+
+        if self.infile1 != None and self.infile2 == None:
+            if self.everything:
+                if "jackknives" in self.dfile1:
+                    for jack in self.jk:
+                        self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
+                        if self.tool == "dgrade":
+                            if len(self.map1.shape) == 6:
+                                C_dgrade6D(self.map1, self.nhit, self.rms)
+                            
+                            elif len(self.map1.shape) == 5:
+                                C_dgrade5D(self.map1, self.nhit, self.rms)
+                            
+                    self.writeMap(jack)
+                
+                self.full = True
+                self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                if self.tool == "dgrade":
+                    C_dgrade5D(self.map1, self.nhit, self.rms)
+                self.writeMap()
+                
+                self.full = False
+                self.beam = True
+                self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                
+                if self.tool == "dgrade":
+                    C_dgrade6D(self.map1, self.nhit, self.rms)
+
+                self.writeMap()
+                self.beam = False
+            
+            if self.jack:
+                for jack in self.jk:
+                    self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
+                    if self.tool == "dgrade":
+                        if len(self.map1.shape) == 6:
+                            C_dgrade6D(self.map1, self.nhit, self.rms)
+                        
+                        elif len(self.map1.shape) == 5:
+                            C_dgrade5D(self.map1, self.nhit, self.rms)
+                            
+                    self.writeMap(jack)
+
+            if self.full:
+                _beam = self.beam
+                self.beam = False
+                self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                
+                if self.tool == "dgrade":
+                    C_dgrade5D(self.map1, self.nhit, self.rms)
+
+                self.writeMap()
+                self.beam = _beam
+        
+            if self.beam:
+                _full = self.full
+                self.full = False
+                self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                
+                if self.tool == "dgrade":
+                    C_dgrade6D(self.map1, self.nhit, self.rms)
+                        
+                self.writeMap()
+                self.full = _full
+            self.writeMap(write_the_rest = True)            
 
     def add(self, data1, data2):
         return data1 + data2
@@ -514,6 +600,70 @@ class Atlas:
                                  self.map, self.nhit, self.rms,
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
+
+def C_dgrade4D(self, map_h, nhit_h, rms_h):
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
+        self.maputilslib.dgrade4D.argtypes = [float32_array4, int32_array4, float32_array4,
+                                              float32_array4, int32_array4, float32_array4,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int]
+        n0, n1, n2, n3 = map_h.shape
+        N2, N3 = int(n2 / self.merge_num), int(n3 / self.merge_num)
+        
+        self.map_l = np.zeros( (n0, n1, N2, N4), dtype = ctypes.c_float)
+        self.nhit_l = np.zeros((n0, n1, N2, N4), dtype = ctypes.c_int)
+        self.rms_l = np.zeros( (n0, n1, N2, N4), dtype = ctypes.c_float)
+
+        self.maputilslib.dgrade4D(map_h, nhit_h, rms_h,
+                                  map_l, nhit_l, rms_l,
+                                  n0,    n1,     n2,
+                                  n3,    N2,     N3,
+                                  self.merge_num)
+
+
+    def C_dgrade5D(self, map_h, nhit_h, rms_h):
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
+        self.maputilslib.dgrade5D.argtypes = [float32_array5, int32_array5, float32_array5,
+                                              float32_array5, int32_array5, float32_array5,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int]
+        n0, n1, n2, n3, n4 = map_h.shape
+        N3, N4 = int(n3 / self.merge_num), int(n4 / self.merge_num)
+        
+        self.map_l = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
+        self.nhit_l = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
+        self.rms_l = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
+
+        self.maputilslib.dgrade5D(map_h, nhit_h, rms_h,
+                                  map_l, nhit_l, rms_l,
+                                  n0,    n1,     n2,
+                                  n3,    n4,     N3,
+                                  N4,    self.merge_num)
+
+    def C_dgrade6D(self, map_h, nhit_h, rms_h):
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
+        self.maputilslib.dgrade6D.argtypes = [float32_array6, int32_array6, float32_array6,
+                                              float32_array6, int32_array6, float32_array6,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3, n4, n5 = map_h.shape
+        N4, N5 = int(n4 / self.merge_num), int(n5 / self.merge_num)
+        
+        self.map_l = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+        self.nhit_l = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
+        self.rms_l = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+
+        self.maputilslib.dgrade6D(map_h,        nhit_h,         rms_h,
+                                  self.map_l,   self.nhit_l,    self.rms_l,
+                                  n0,           n1,             n2,
+                                  n3,           n4,             n5, 
+                                  N4,           N5,             self.merge_num)
                             
     def add_rms(self, rms1, rms2):
         var1 = np.square(rms1)
