@@ -35,9 +35,10 @@ class Atlas:
         if self.outfile == None:
             print("To save result to outfile, please provide a valid outfile name!")
             sys.exit() 
-        if self.jack and ("jackknives" not in self.dfile1 or "jackknives" not in self.dfile2):
-            print("One or both of the input files does not contain any jackknife information!")
-            sys.exit()
+        if self.infile1 != None and self.infile2 != None:
+            if self.jack and ("jackknives" not in self.dfile1 or "jackknives" not in self.dfile2):
+                print("One or both of the input files does not contain any jackknife information!")
+                sys.exit()
         if not self.full and not self.beam and not self.jack:
             self.everything = True
             if self.infile1 != None and self.infile2 != None:
@@ -74,15 +75,19 @@ class Atlas:
                         print("Make sure you have chosen the correct jk choices")                                                                                                   
                         sys.exit() 
             elif opt in ("-t", "--tool"):
-                if "dgradeXY" in arg.split(",") and len(arg.split(",")) == 2:
+                if "coadd" in arg or "subtract" in arg:
+                    if self.infile1 != None and self.infile2 == None:
+                        print("To perform a coadd or subtraction two input files must be given!")
+                        sys.exit()
+                elif "dgradeXY" in arg.split(",") and len(arg.split(",")) == 2:
                     if self.infile1 != None and self.infile2 != None:
                         print("Tool dgradeXY is only supported for single input file!")
                         sys.exit()
-                    self.tool, self.merge_num = arg.split(",")
-                    self.merge_num = int(self.merge_num)
+                    self.tool, self.merge_numXY = arg.split(",")
+                    self.merge_numXY = int(self.merge_numXY)
                     n_x = np.array(self.dfile1["n_x"])
                     n_y = np.array(self.dfile1["n_y"])
-                    if n_x % self.merge_num != 0 or n_y % self.merge_num != 0: 
+                    if n_x % self.merge_numXY != 0 or n_y % self.merge_numXY != 0: 
                         message = """\
                         Make sure that the pixel grid resolution of input map 
                         file is a multiple of the number of merging pixels!
@@ -101,10 +106,10 @@ class Atlas:
                     if self.infile1 != None and self.infile2 != None:
                         print("Tool dgradeZ is only supported for single input file!")
                         sys.exit()
-                    self.tool, self.merge_num = arg.split(",")
-                    self.merge_num = int(self.merge_num)
+                    self.tool, self.merge_numZ = arg.split(",")
+                    self.merge_numZ = int(self.merge_numZ)
                     n_z = self.dfile1["freq"].shape[1]
-                    if n_z % self.merge_num != 0: 
+                    if n_z % self.merge_numZ != 0: 
                         message = """\
                         Make sure that the pixel grid resolution of input map file is a multiple
                         of the number of merging pixels!
@@ -301,24 +306,16 @@ class Atlas:
             nhit_name   = "jackknives/nhit_" + jackmode
             rms_name    = "jackknives/rms_" + jackmode
             if map_name in self.ofile and self.access == "a":
-                if self.tool == "dgradeXY":
-                    """
-                    To overwrite existing dataset with different shape, the existing
-                    dataset must first be deleted.
-                    """        
-                    del self.ofile[map_name]
-                    del self.ofile[nhit_name]
-                    del self.ofile[rms_name]
-                    self.ofile.create_dataset(map_name, data = self.map)
-                    self.ofile.create_dataset(nhit_name, data = self.nhit)
-                    self.ofile.create_dataset(rms_name, data = self.rms)
-                else:    
-                    map_data        = self.ofile[map_name]
-                    nhit_data       = self.ofile[nhit_name]
-                    rms_data        = self.ofile[rms_name]
-                    map_data[...]   = self.map
-                    nhit_data[...]  = self.nhit
-                    rms_data[...]   = self.rms
+                """
+                To overwrite existing dataset with different shape, the existing
+                dataset must first be deleted.
+                """        
+                del self.ofile[map_name]
+                del self.ofile[nhit_name]
+                del self.ofile[rms_name]
+                self.ofile.create_dataset(map_name, data = self.map)
+                self.ofile.create_dataset(nhit_name, data = self.nhit)
+                self.ofile.create_dataset(rms_name, data = self.rms)
             else:
                 self.ofile.create_dataset(map_name, data = self.map)
                 self.ofile.create_dataset(nhit_name, data = self.nhit)
@@ -335,28 +332,22 @@ class Atlas:
                 rms_name    = "rms"
                 
             if map_name in self.ofile and self.access == "a":
-                if self.tool == "dgradeXY":
-                    """
-                    To overwrite existing dataset with different shape, the existing
-                    dataset must first be deleted.
-                    """
-                    del self.ofile[map_name]
-                    del self.ofile[nhit_name]
-                    del self.ofile[rms_name]
-                    self.ofile.create_dataset(map_name, data = self.map)
-                    self.ofile.create_dataset(nhit_name, data = self.nhit)
-                    self.ofile.create_dataset(rms_name, data = self.rms)
-                else:
-                    map_data        = self.ofile[map_name]
-                    nhit_data       = self.ofile[nhit_name]
-                    rms_data        = self.ofile[rms_name]
-                    map_data[...]   = self.map
-                    nhit_data[...]  = self.nhit
-                    rms_data[...]   = self.rms
+                """
+                To overwrite existing dataset with different shape, the existing
+                dataset must first be deleted.
+                """
+                del self.ofile[map_name]
+                del self.ofile[nhit_name]
+                del self.ofile[rms_name]
+                self.ofile.create_dataset(map_name, data = self.map)
+                self.ofile.create_dataset(nhit_name, data = self.nhit)
+                self.ofile.create_dataset(rms_name, data = self.rms)
+
             else:
                 self.ofile.create_dataset(map_name, data = self.map)
                 self.ofile.create_dataset(nhit_name, data = self.nhit)
                 self.ofile.create_dataset(rms_name, data = self.rms)
+        
         if write_the_rest:
             if self.infile1 != None and self.infile2 != None:
                 data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
@@ -374,29 +365,39 @@ class Atlas:
                                 self.ofile.create_dataset("jackknives/" + name, 
                                                             data = self.dfile1["jackknives/" + name])   
             else:   
+                if self.tool == "dgradeXY":
+                    self.merge_numZ = 1
+                elif self.tool == "dgradeZ":
+                    self.merge_numXY = 1
+                
                 condition1 = "x" in self.ofile and "y" in self.ofile 
                 condition2 = "n_x" in self.ofile and "n_y" in self.ofile 
                 condition3 = "nside" in self.ofile
-                condition  = condition1 and condition2 and condition3 
+                condition4 = "freq" in self.ofile
+                condition  = condition1 and condition2 and condition3 and condition4
+
                 if not condition:
                     x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
-                    x      = x1.reshape(int(len(x1) / self.merge_num), self.merge_num) 
-                    y      = y1.reshape(int(len(y1) / self.merge_num), self.merge_num)
+                    x      = x1.reshape(int(len(x1) / self.merge_numXY), self.merge_numXY) 
+                    y      = y1.reshape(int(len(y1) / self.merge_numXY), self.merge_numXY)
                     x      = np.mean(x, axis = 1)
                     y      = np.mean(y, axis = 1)
                     
-                    nside  = np.array(self.dfile1["nside"]) / self.merge_num                
-                    
+                    nside  = np.array(self.dfile1["nside"]) / self.merge_numXY                
+                    freq   = self.dfile1["freq"][:]
+                    freq   = freq.reshape(freq.shape[0], int(freq.shape[1] / self.merge_numZ), self.merge_numZ)
+                    freq   = np.mean(freq, axis = 2)
 
                     self.ofile.create_dataset("x",      data = x)
                     self.ofile.create_dataset("y",      data = y)
                     self.ofile.create_dataset("n_x",    data = len(x))
                     self.ofile.create_dataset("n_y",    data = len(y))
                     self.ofile.create_dataset("nside",  data = nside)
+                    self.ofile.create_dataset("freq",   data = freq)
 
                 data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
                                     "nhit_beam", "rms", "rms_beam",
-                                    "x", "y", "n_x", "n_y", "nside"]
+                                    "x", "y", "n_x", "n_y", "nside", "freq"]
                 jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
                                        "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
                                        "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
@@ -537,13 +538,35 @@ class Atlas:
                                 self.C_dgradeXY6D(self.map1, self.nhit1, self.rms1)
                             
                             elif len(self.map1.shape) == 5:
-                                self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)    
+                                self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
+                        
+                        elif self.tool == "dgradeZ":
+                            if len(self.map1.shape) == 6:
+                                self.C_dgradeZ6D(self.map1, self.nhit1, self.rms1)
+                            
+                            elif len(self.map1.shape) == 5:
+                                self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+
+                        elif self.tool == "dgradeXYZ":
+                            if len(self.map1.shape) == 6:
+                                self.C_dgradeXYZ6D(self.map1, self.nhit1, self.rms1)
+                            
+                            elif len(self.map1.shape) == 5:
+                                self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
+
                         self.writeMap(jack)
-                
                 self.full = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
+                
+                elif self.tool == "dgradeZ":
+                    self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+                
+                elif self.tool == "dgradeXYZ":
+                    self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
+                
                 self.writeMap()
                 
                 self.full = False
@@ -553,9 +576,14 @@ class Atlas:
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY4D(self.map1, self.nhit1, self.rms1)
 
+                elif self.tool == "dgradeZ":
+                    self.C_dgradeZ4D(self.map1, self.nhit1, self.rms1)
+
+                elif self.tool == "dgradeXYZ":
+                    self.C_dgradeXYZ4D(self.map1, self.nhit1, self.rms1)
+
                 self.writeMap()
                 self.beam = False
-            
             if self.jack:
                 for jack in self.jk:
                     self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
@@ -565,7 +593,21 @@ class Atlas:
                         
                         elif len(self.map1.shape) == 5:
                             self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
-                            
+                        
+                    elif self.tool == "dgradeZ":
+                        if len(self.map1.shape) == 6:
+                            self.C_dgradeZ6D(self.map1, self.nhit1, self.rms1)
+                        
+                        elif len(self.map1.shape) == 5:
+                            self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+
+                    elif self.tool == "dgradeXYZ":
+                        if len(self.map1.shape) == 6:
+                            self.C_dgradeXYZ6D(self.map1, self.nhit1, self.rms1)
+                        
+                        elif len(self.map1.shape) == 5:
+                            self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
+
                     self.writeMap(jack)
 
             if self.full:
@@ -575,7 +617,13 @@ class Atlas:
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
-
+                
+                elif self.tool == "dgradeZ":
+                    self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+                
+                elif self.tool == "dgradeXYZ":
+                    self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
+            
                 self.writeMap()
                 self.beam = _beam
         
@@ -586,7 +634,13 @@ class Atlas:
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY4D(self.map1, self.nhit1, self.rms1)
-                        
+                
+                elif self.tool == "dgradeZ":
+                    self.C_dgradeZ4D(self.map1, self.nhit1, self.rms1)
+
+                elif self.tool == "dgradeXYZ":
+                    self.C_dgradeXYZ4D(self.map1, self.nhit1, self.rms1)
+
                 self.writeMap()
                 self.full = _full
             self.writeMap(write_the_rest = True)            
@@ -727,7 +781,7 @@ class Atlas:
                                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                   ctypes.c_int]
             n0, n1, n2, n3 = map_h.shape
-            N2, N3 = int(n2 / self.merge_num), int(n3 / self.merge_num)
+            N2, N3 = int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)
             
             self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
             self.nhit = np.zeros((n0, n1, N2, N3), dtype = ctypes.c_int)
@@ -737,7 +791,7 @@ class Atlas:
                                     self.map,   self.nhit,  self.rms,
                                     n0,         n1,         n2,
                                     n3,         N2,         N3,
-                                    self.merge_num)
+                                    self.merge_numXY)
 
     def C_dgradeXY5D(self, map_h, nhit_h, rms_h):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
@@ -748,7 +802,7 @@ class Atlas:
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int]
         n0, n1, n2, n3, n4 = map_h.shape
-        N3, N4 = int(n3 / self.merge_num), int(n4 / self.merge_num)
+        N3, N4 = int(n3 / self.merge_numXY), int(n4 / self.merge_numXY)
         
         self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
         self.nhit = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
@@ -758,7 +812,7 @@ class Atlas:
                                   self.map, self.nhit,  self.rms,
                                   n0,       n1,         n2,
                                   n3,       n4,         N3,
-                                  N4,       self.merge_num)
+                                  N4,       self.merge_numXY)
 
     def C_dgradeXY6D(self, map_h, nhit_h, rms_h):
         float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
@@ -769,7 +823,7 @@ class Atlas:
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int]
         n0, n1, n2, n3, n4, n5 = map_h.shape
-        N4, N5 = int(n4 / self.merge_num), int(n5 / self.merge_num)
+        N4, N5 = int(n4 / self.merge_numXY), int(n5 / self.merge_numXY)
         
         self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
         self.nhit = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
@@ -779,7 +833,7 @@ class Atlas:
                                   self.map,     self.nhit,      self.rms,
                                   n0,           n1,             n2,
                                   n3,           n4,             n5, 
-                                  N4,           N5,             self.merge_num)
+                                  N4,           N5,             self.merge_numXY)
 
     def C_dgradeZ4D(self, map_h, nhit_h, rms_h):
             float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
@@ -789,7 +843,7 @@ class Atlas:
                                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int]
             n0, n1, n2, n3  = map_h.shape
-            N1              = int(n1 / self.merge_num)
+            N1              = int(n1 / self.merge_numZ)
             
             self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
             self.nhit = np.zeros((n0, N1, n2, n3), dtype = ctypes.c_int)
@@ -798,7 +852,7 @@ class Atlas:
             self.maputilslib.dgradeZ4D(map_h,    nhit_h,     rms_h,
                                        self.map,   self.nhit,  self.rms,
                                        n0,         n1,         n2,
-                                       n3,         N1,         self.merge_num)
+                                       n3,         N1,         self.merge_numZ)
 
     def C_dgradeZ5D(self, map_h, nhit_h, rms_h):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
@@ -809,7 +863,7 @@ class Atlas:
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int]
         n0, n1, n2, n3, n4 = map_h.shape
-        N2 = int(n2 / self.merge_num)
+        N2 = int(n2 / self.merge_numZ)
         
         self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
         self.nhit = np.zeros((n0, n1, N2, n3, n4), dtype = ctypes.c_int)
@@ -819,7 +873,7 @@ class Atlas:
                                   self.map, self.nhit,  self.rms,
                                   n0,       n1,         n2,
                                   n3,       n4,         N2,
-                                  self.merge_num)
+                                  self.merge_numZ)
 
     def C_dgradeZ6D(self, map_h, nhit_h, rms_h):
         float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
@@ -830,7 +884,7 @@ class Atlas:
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int]
         n0, n1, n2, n3, n4, n5 = map_h.shape
-        N3 = int(n3 / self.merge_num)
+        N3 = int(n3 / self.merge_numZ)
         
         self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
         self.nhit = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
@@ -840,7 +894,7 @@ class Atlas:
                                   self.map,     self.nhit,      self.rms,
                                   n0,           n1,             n2,
                                   n3,           n4,             n5, 
-                                  N3,           self.merge_num)
+                                  N3,           self.merge_numZ)
     
     def C_dgradeXYZ4D(self, map_h, nhit_h, rms_h):
             float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
@@ -851,7 +905,7 @@ class Atlas:
                                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int]
             n0, n1, n2, n3 = map_h.shape
-            N1, N2, N3 = int(n2 / self.merge_numZ), int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)
+            N1, N2, N3 = int(n1 / self.merge_numZ), int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)
             
             self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
             self.nhit = np.zeros((n0, N1, N2, N3), dtype = ctypes.c_int)
@@ -861,7 +915,7 @@ class Atlas:
                                          self.map, self.nhit,       self.rms,
                                          n0,       n1,              n2,
                                          n3,       N1,              N2,
-                                         N3,       self.merge_numZ  self.merge_numXY)
+                                         N3,       self.merge_numZ,  self.merge_numXY)
 
     def C_dgradeXYZ5D(self, map_h, nhit_h, rms_h):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
@@ -883,7 +937,7 @@ class Atlas:
                                   self.map, self.nhit,  self.rms,
                                   n0,       n1,         n2,
                                   n3,       n4,         N2,
-                                  N3,       N4,         self.merge_numZ
+                                  N3,       N4,         self.merge_numZ,
                                   self.merge_numXY)
 
     def C_dgradeXYZ6D(self, map_h, nhit_h, rms_h):
@@ -906,9 +960,8 @@ class Atlas:
                                   self.map,         self.nhit,      self.rms,
                                   n0,               n1,             n2,
                                   n3,               n4,             n5, 
-                                  N3,               N4,             N5
+                                  N3,               N4,             N5,
                                   self.merge_numZ,  self.merge_numXY)
-    
 
     def add_rms(self, rms1, rms2):
         var1 = np.square(rms1)
