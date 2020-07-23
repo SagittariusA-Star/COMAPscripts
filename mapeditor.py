@@ -242,12 +242,24 @@ class Atlas:
             nhit_name   = "jackknives/nhit_" + jackmode
             rms_name    = "jackknives/rms_" + jackmode
             if map_name in self.ofile and self.access == "a":
-                map_data        = self.ofile[map_name]
-                nhit_data       = self.ofile[nhit_name]
-                rms_data        = self.ofile[rms_name]
-                map_data[...]   = self.map
-                nhit_data[...]  = self.nhit
-                rms_data[...]   = self.rms
+                if self.tool == "dgrade":
+                    """
+                    To overwrite existing dataset with different shape, the existing
+                    dataset must first be deleted.
+                    """        
+                    del self.ofile[map_name]
+                    del self.ofile[nhit_name]
+                    del self.ofile[rms_name]
+                    self.ofile.create_dataset(map_name, data = self.map)
+                    self.ofile.create_dataset(nhit_name, data = self.nhit)
+                    self.ofile.create_dataset(rms_name, data = self.rms)
+                else:    
+                    map_data        = self.ofile[map_name]
+                    nhit_data       = self.ofile[nhit_name]
+                    rms_data        = self.ofile[rms_name]
+                    map_data[...]   = self.map
+                    nhit_data[...]  = self.nhit
+                    rms_data[...]   = self.rms
             else:
                 self.ofile.create_dataset(map_name, data = self.map)
                 self.ofile.create_dataset(nhit_name, data = self.nhit)
@@ -264,34 +276,83 @@ class Atlas:
                 rms_name    = "rms"
                 
             if map_name in self.ofile and self.access == "a":
-                map_data        = self.ofile[map_name]
-                nhit_data       = self.ofile[nhit_name]
-                rms_data        = self.ofile[rms_name]
-                map_data[...]   = self.map
-                nhit_data[...]  = self.nhit
-                rms_data[...]   = self.rms
+                if self.tool == "dgrade":
+                    """
+                    To overwrite existing dataset with different shape, the existing
+                    dataset must first be deleted.
+                    """
+                    del self.ofile[map_name]
+                    del self.ofile[nhit_name]
+                    del self.ofile[rms_name]
+                    self.ofile.create_dataset(map_name, data = self.map)
+                    self.ofile.create_dataset(nhit_name, data = self.nhit)
+                    self.ofile.create_dataset(rms_name, data = self.rms)
+                else:
+                    map_data        = self.ofile[map_name]
+                    nhit_data       = self.ofile[nhit_name]
+                    rms_data        = self.ofile[rms_name]
+                    map_data[...]   = self.map
+                    nhit_data[...]  = self.nhit
+                    rms_data[...]   = self.rms
             else:
                 self.ofile.create_dataset(map_name, data = self.map)
                 self.ofile.create_dataset(nhit_name, data = self.nhit)
                 self.ofile.create_dataset(rms_name, data = self.rms)
         if write_the_rest:
-            data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
-                                "nhit_beam", "rms", "rms_beam"]
-            jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
-                                   "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
-                                   "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
-            for name in self.dfile1.keys():
-                if name not in self.ofile.keys() and name not in data_not_to_copy:
-                    self.ofile.create_dataset(name, data = self.dfile1[name])    
-            
-            if self.infile1 != None and self.infile2 != 0:
-                if "jackknives" in self.dfile1 and "jackknives" in self.dfile2 and "jackknives" in self.ofile:
-                    for name in self.dfile1["jackknives"].keys():
-                        if name not in self.ofile["jackknives"].keys() and name not in jk_data_not_to_copy:
-                            self.ofile.create_dataset("jackknives/" + name, 
-                                                        data = self.dfile1["jackknives/" + name])   
+            if self.infile1 != None and self.infile2 != None:
+                data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
+                                    "nhit_beam", "rms", "rms_beam"]
+                jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
+                                       "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
+                                       "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
+                for name in self.dfile1.keys():
+                    if name not in self.ofile.keys() and name not in data_not_to_copy:
+                        self.ofile.create_dataset(name, data = self.dfile1[name])    
+                
+                    if "jackknives" in self.dfile1 and "jackknives" in self.dfile2 and "jackknives" in self.ofile:
+                        for name in self.dfile1["jackknives"].keys():
+                            if name not in self.ofile["jackknives"].keys() and name not in jk_data_not_to_copy:
+                                self.ofile.create_dataset("jackknives/" + name, 
+                                                            data = self.dfile1["jackknives/" + name])   
+            else:   
+                condition1 = "x" in self.ofile and "y" in self.ofile 
+                condition2 = "n_x" in self.ofile and "n_y" in self.ofile 
+                condition3 = "nside" in self.ofile
+                condition  = condition1 and condition2 and condition3 
+                if not condition:
+                    x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
+                    x      = x1.reshape(int(len(x1) / self.merge_num), self.merge_num) 
+                    y      = y1.reshape(int(len(y1) / self.merge_num), self.merge_num)
+                    x      = np.mean(x, axis = 1)
+                    y      = np.mean(y, axis = 1)
+                    
+                    nside  = np.array(self.dfile1["nside"]) / self.merge_num                
+                    
 
-    def operation(self):                
+                    self.ofile.create_dataset("x",      data = x)
+                    self.ofile.create_dataset("y",      data = y)
+                    self.ofile.create_dataset("n_x",    data = len(x))
+                    self.ofile.create_dataset("n_y",    data = len(y))
+                    self.ofile.create_dataset("nside",  data = nside)
+
+                data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
+                                    "nhit_beam", "rms", "rms_beam",
+                                    "x", "y", "n_x", "n_y", "nside"]
+                jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
+                                       "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
+                                       "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
+                for name in self.dfile1.keys():
+                    if name not in self.ofile.keys() and name not in data_not_to_copy:
+                        self.ofile.create_dataset(name, data = self.dfile1[name])    
+                
+                    if "jackknives" in self.dfile1 and "jackknives" in self.ofile:
+                        for name in self.dfile1["jackknives"].keys():
+                            if name not in self.ofile["jackknives"].keys() and name not in jk_data_not_to_copy:
+                                self.ofile.create_dataset("jackknives/" + name, 
+                                                            data = self.dfile1["jackknives/" + name])   
+            
+
+    def operation(self):             
         if self.infile1 != None and self.infile2 != None:
             if self.everything:
                 if "jackknives" in self.dfile1 and "jackknives" in self.dfile2:
@@ -414,17 +475,16 @@ class Atlas:
                         self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
                         if self.tool == "dgrade":
                             if len(self.map1.shape) == 6:
-                                C_dgrade6D(self.map1, self.nhit, self.rms)
+                                self.C_dgrade6D(self.map1, self.nhit1, self.rms1)
                             
                             elif len(self.map1.shape) == 5:
-                                C_dgrade5D(self.map1, self.nhit, self.rms)
-                            
-                    self.writeMap(jack)
+                                self.C_dgrade5D(self.map1, self.nhit1, self.rms1)    
+                        self.writeMap(jack)
                 
                 self.full = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 if self.tool == "dgrade":
-                    C_dgrade5D(self.map1, self.nhit, self.rms)
+                    self.C_dgrade5D(self.map1, self.nhit1, self.rms1)
                 self.writeMap()
                 
                 self.full = False
@@ -432,7 +492,7 @@ class Atlas:
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 
                 if self.tool == "dgrade":
-                    C_dgrade6D(self.map1, self.nhit, self.rms)
+                    self.C_dgrade4D(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = False
@@ -442,10 +502,10 @@ class Atlas:
                     self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
                     if self.tool == "dgrade":
                         if len(self.map1.shape) == 6:
-                            C_dgrade6D(self.map1, self.nhit, self.rms)
+                            self.C_dgrade6D(self.map1, self.nhit1, self.rms1)
                         
                         elif len(self.map1.shape) == 5:
-                            C_dgrade5D(self.map1, self.nhit, self.rms)
+                            self.C_dgrade5D(self.map1, self.nhit1, self.rms1)
                             
                     self.writeMap(jack)
 
@@ -455,7 +515,7 @@ class Atlas:
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 
                 if self.tool == "dgrade":
-                    C_dgrade5D(self.map1, self.nhit, self.rms)
+                    self.C_dgrade5D(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = _beam
@@ -466,7 +526,7 @@ class Atlas:
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 
                 if self.tool == "dgrade":
-                    C_dgrade6D(self.map1, self.nhit, self.rms)
+                    self.C_dgrade4D(self.map1, self.nhit1, self.rms1)
                         
                 self.writeMap()
                 self.full = _full
@@ -601,26 +661,26 @@ class Atlas:
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
 
-def C_dgrade4D(self, map_h, nhit_h, rms_h):
-        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.dgrade4D.argtypes = [float32_array4, int32_array4, float32_array4,
-                                              float32_array4, int32_array4, float32_array4,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int]
-        n0, n1, n2, n3 = map_h.shape
-        N2, N3 = int(n2 / self.merge_num), int(n3 / self.merge_num)
-        
-        self.map_l = np.zeros( (n0, n1, N2, N4), dtype = ctypes.c_float)
-        self.nhit_l = np.zeros((n0, n1, N2, N4), dtype = ctypes.c_int)
-        self.rms_l = np.zeros( (n0, n1, N2, N4), dtype = ctypes.c_float)
+    def C_dgrade4D(self, map_h, nhit_h, rms_h):
+            float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
+            int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
+            self.maputilslib.dgrade4D.argtypes = [float32_array4, int32_array4, float32_array4,
+                                                  float32_array4, int32_array4, float32_array4,
+                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                  ctypes.c_int]
+            n0, n1, n2, n3 = map_h.shape
+            N2, N3 = int(n2 / self.merge_num), int(n3 / self.merge_num)
+            
+            self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
+            self.nhit = np.zeros((n0, n1, N2, N3), dtype = ctypes.c_int)
+            self.rms = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
 
-        self.maputilslib.dgrade4D(map_h, nhit_h, rms_h,
-                                  map_l, nhit_l, rms_l,
-                                  n0,    n1,     n2,
-                                  n3,    N2,     N3,
-                                  self.merge_num)
+            self.maputilslib.dgrade4D(map_h,    nhit_h,     rms_h,
+                                    self.map,   self.nhit,  self.rms,
+                                    n0,         n1,         n2,
+                                    n3,         N2,         N3,
+                                    self.merge_num)
 
 
     def C_dgrade5D(self, map_h, nhit_h, rms_h):
@@ -634,15 +694,15 @@ def C_dgrade4D(self, map_h, nhit_h, rms_h):
         n0, n1, n2, n3, n4 = map_h.shape
         N3, N4 = int(n3 / self.merge_num), int(n4 / self.merge_num)
         
-        self.map_l = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
-        self.nhit_l = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
-        self.rms_l = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
+        self.nhit = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
 
-        self.maputilslib.dgrade5D(map_h, nhit_h, rms_h,
-                                  map_l, nhit_l, rms_l,
-                                  n0,    n1,     n2,
-                                  n3,    n4,     N3,
-                                  N4,    self.merge_num)
+        self.maputilslib.dgrade5D(map_h,    nhit_h,     rms_h,
+                                  self.map, self.nhit,  self.rms,
+                                  n0,       n1,         n2,
+                                  n3,       n4,         N3,
+                                  N4,       self.merge_num)
 
     def C_dgrade6D(self, map_h, nhit_h, rms_h):
         float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
@@ -655,12 +715,12 @@ def C_dgrade4D(self, map_h, nhit_h, rms_h):
         n0, n1, n2, n3, n4, n5 = map_h.shape
         N4, N5 = int(n4 / self.merge_num), int(n5 / self.merge_num)
         
-        self.map_l = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
-        self.nhit_l = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
-        self.rms_l = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+        self.nhit = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
 
         self.maputilslib.dgrade6D(map_h,        nhit_h,         rms_h,
-                                  self.map_l,   self.nhit_l,    self.rms_l,
+                                  self.map,     self.nhit,      self.rms,
                                   n0,           n1,             n2,
                                   n3,           n4,             n5, 
                                   N4,           N5,             self.merge_num)
