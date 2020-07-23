@@ -11,7 +11,7 @@ class Atlas:
         self.jk_choices   = ["odde", "dayn", "half", "sdlb"]
         self.jk           = None
         self.jack         = False
-        self.tool_choices   = ["coadd", "subtract", "dgrade"]
+        self.tool_choices   = ["coadd", "subtract", "dgradeXY", "dgradeZ", "dgradeXYZ"]
         self.tool           = "coadd"
         self.freq         = "all"
         self.det_list     = np.arange(1,20)
@@ -74,19 +74,78 @@ class Atlas:
                         print("Make sure you have chosen the correct jk choices")                                                                                                   
                         sys.exit() 
             elif opt in ("-t", "--tool"):
-                if "dgrade" in arg.split(",") and len(arg.split(",")) == 2:
+                if "dgradeXY" in arg.split(",") and len(arg.split(",")) == 2:
                     if self.infile1 != None and self.infile2 != None:
-                        print("Tool dgrade is only supported for single input file!")
+                        print("Tool dgradeXY is only supported for single input file!")
                         sys.exit()
                     self.tool, self.merge_num = arg.split(",")
                     self.merge_num = int(self.merge_num)
                     n_x = np.array(self.dfile1["n_x"])
                     n_y = np.array(self.dfile1["n_y"])
                     if n_x % self.merge_num != 0 or n_y % self.merge_num != 0: 
-                        print("Make sure that the pixel grid resolution of input map file is a multiple of the number of merging pixels!")
+                        message = """\
+                        Make sure that the pixel grid resolution of input map 
+                        file is a multiple of the number of merging pixels!
+                        """
+                        print(textwrap.dedent(message))
                         sys.exit()
-                elif "dgrade" in arg.split(",") and len(arg.split(",")) != 2:
-                    print("To use dgrade tool please provide a number of pixels to merge along each axis; e.g. -t dgrade,2\n(don't forget the comma!!)!")
+                elif "dgradeXY" in arg.split(",") and len(arg.split(",")) != 2:
+                    message = """\
+                    To use dgradeXY tool please provide a number of pixels to co-merge along each 
+                    axis; e.g. -t dgrade,2 (don't forget the comma!!)!
+                    """
+                    print(textwrap.dedent(message))
+                    sys.exit()
+                
+                elif "dgradeZ" in arg.split(",") and len(arg.split(",")) == 2:
+                    if self.infile1 != None and self.infile2 != None:
+                        print("Tool dgradeZ is only supported for single input file!")
+                        sys.exit()
+                    self.tool, self.merge_num = arg.split(",")
+                    self.merge_num = int(self.merge_num)
+                    n_z = self.dfile1["freq"].shape[1]
+                    if n_z % self.merge_num != 0: 
+                        message = """\
+                        Make sure that the pixel grid resolution of input map file is a multiple
+                        of the number of merging pixels!
+                        """
+                        print(textwrap.dedent(message))
+                        sys.exit()
+                elif "dgradeZ" in arg.split(",") and len(arg.split(",")) != 2:
+                    message = """\
+                    To use dgradeZ tool please provide a number of frequency channels to co-merge along 
+                    each axis; e.g. -t dgrade,2 (don't forget the comma!!)!
+                    """
+                    print(textwrap.dedent(message))
+                    sys.exit()
+                
+                elif "dgradeXYZ" in arg.split(",") and len(arg.split(",")) == 3:
+                    if self.infile1 != None and self.infile2 != None:
+                        print("Tool dgradeXYZ is only supported for single input file!")
+                        sys.exit()
+                    self.tool, self.merge_numXY, self.merge_numZ = arg.split(",")
+                    self.merge_numXY, self.merge_numZ = int(self.merge_numXY), int(self.merge_numZ)
+                    n_x = np.array(self.dfile1["n_x"])
+                    n_y = np.array(self.dfile1["n_y"])
+                    n_z = self.dfile1["freq"].shape[1]
+                    conditionX = n_x % self.merge_numXY != 0
+                    conditionY = n_y % self.merge_numXY != 0
+                    conditionZ = n_z % self.merge_numZ  != 0
+                    condition  = conditionX or conditionY or conditionZ
+                    if condition: 
+                        message = """\
+                        Make sure that the pixel grid resolution and number of frequency channels of 
+                        input map file is a multiple of the number of merging pixels!
+                        """
+                        print(textwrap.dedent(message))
+                        sys.exit()
+                elif "dgradeXYZ" in arg.split(",") and len(arg.split(",")) != 3:
+                    message = """
+                    To use dgradeXYZ tool please provide a number of pixels 
+                    to co-merge along each axis as well as a number of frequency 
+                    channels to co-merge; e.g. -t dgrade,2,2 (don't forget the commas!!)!
+                    """
+                    print(textwrap.dedent(message))
                     sys.exit()
                 else:
                     self.tool = arg
@@ -242,7 +301,7 @@ class Atlas:
             nhit_name   = "jackknives/nhit_" + jackmode
             rms_name    = "jackknives/rms_" + jackmode
             if map_name in self.ofile and self.access == "a":
-                if self.tool == "dgrade":
+                if self.tool == "dgradeXY":
                     """
                     To overwrite existing dataset with different shape, the existing
                     dataset must first be deleted.
@@ -276,7 +335,7 @@ class Atlas:
                 rms_name    = "rms"
                 
             if map_name in self.ofile and self.access == "a":
-                if self.tool == "dgrade":
+                if self.tool == "dgradeXY":
                     """
                     To overwrite existing dataset with different shape, the existing
                     dataset must first be deleted.
@@ -473,26 +532,26 @@ class Atlas:
                 if "jackknives" in self.dfile1:
                     for jack in self.jk:
                         self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
-                        if self.tool == "dgrade":
+                        if self.tool == "dgradeXY":
                             if len(self.map1.shape) == 6:
-                                self.C_dgrade6D(self.map1, self.nhit1, self.rms1)
+                                self.C_dgradeXY6D(self.map1, self.nhit1, self.rms1)
                             
                             elif len(self.map1.shape) == 5:
-                                self.C_dgrade5D(self.map1, self.nhit1, self.rms1)    
+                                self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)    
                         self.writeMap(jack)
                 
                 self.full = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
-                if self.tool == "dgrade":
-                    self.C_dgrade5D(self.map1, self.nhit1, self.rms1)
+                if self.tool == "dgradeXY":
+                    self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
                 self.writeMap()
                 
                 self.full = False
                 self.beam = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 
-                if self.tool == "dgrade":
-                    self.C_dgrade4D(self.map1, self.nhit1, self.rms1)
+                if self.tool == "dgradeXY":
+                    self.C_dgradeXY4D(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = False
@@ -500,12 +559,12 @@ class Atlas:
             if self.jack:
                 for jack in self.jk:
                     self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
-                    if self.tool == "dgrade":
+                    if self.tool == "dgradeXY":
                         if len(self.map1.shape) == 6:
-                            self.C_dgrade6D(self.map1, self.nhit1, self.rms1)
+                            self.C_dgradeXY6D(self.map1, self.nhit1, self.rms1)
                         
                         elif len(self.map1.shape) == 5:
-                            self.C_dgrade5D(self.map1, self.nhit1, self.rms1)
+                            self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
                             
                     self.writeMap(jack)
 
@@ -514,8 +573,8 @@ class Atlas:
                 self.beam = False
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 
-                if self.tool == "dgrade":
-                    self.C_dgrade5D(self.map1, self.nhit1, self.rms1)
+                if self.tool == "dgradeXY":
+                    self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = _beam
@@ -525,8 +584,8 @@ class Atlas:
                 self.full = False
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 
-                if self.tool == "dgrade":
-                    self.C_dgrade4D(self.map1, self.nhit1, self.rms1)
+                if self.tool == "dgradeXY":
+                    self.C_dgradeXY4D(self.map1, self.nhit1, self.rms1)
                         
                 self.writeMap()
                 self.full = _full
@@ -661,10 +720,10 @@ class Atlas:
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
 
-    def C_dgrade4D(self, map_h, nhit_h, rms_h):
+    def C_dgradeXY4D(self, map_h, nhit_h, rms_h):
             float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
             int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-            self.maputilslib.dgrade4D.argtypes = [float32_array4, int32_array4, float32_array4,
+            self.maputilslib.dgradeXY4D.argtypes = [float32_array4, int32_array4, float32_array4,
                                                   float32_array4, int32_array4, float32_array4,
                                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int,
@@ -676,17 +735,17 @@ class Atlas:
             self.nhit = np.zeros((n0, n1, N2, N3), dtype = ctypes.c_int)
             self.rms = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
 
-            self.maputilslib.dgrade4D(map_h,    nhit_h,     rms_h,
+            self.maputilslib.dgradeXY4D(map_h,    nhit_h,     rms_h,
                                     self.map,   self.nhit,  self.rms,
                                     n0,         n1,         n2,
                                     n3,         N2,         N3,
                                     self.merge_num)
 
 
-    def C_dgrade5D(self, map_h, nhit_h, rms_h):
+    def C_dgradeXY5D(self, map_h, nhit_h, rms_h):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
         int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.dgrade5D.argtypes = [float32_array5, int32_array5, float32_array5,
+        self.maputilslib.dgradeXY5D.argtypes = [float32_array5, int32_array5, float32_array5,
                                               float32_array5, int32_array5, float32_array5,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
@@ -698,16 +757,16 @@ class Atlas:
         self.nhit = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
 
-        self.maputilslib.dgrade5D(map_h,    nhit_h,     rms_h,
+        self.maputilslib.dgradeXY5D(map_h,    nhit_h,     rms_h,
                                   self.map, self.nhit,  self.rms,
                                   n0,       n1,         n2,
                                   n3,       n4,         N3,
                                   N4,       self.merge_num)
 
-    def C_dgrade6D(self, map_h, nhit_h, rms_h):
+    def C_dgradeXY6D(self, map_h, nhit_h, rms_h):
         float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
         int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.dgrade6D.argtypes = [float32_array6, int32_array6, float32_array6,
+        self.maputilslib.dgradeXY6D.argtypes = [float32_array6, int32_array6, float32_array6,
                                               float32_array6, int32_array6, float32_array6,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
@@ -719,7 +778,7 @@ class Atlas:
         self.nhit = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
 
-        self.maputilslib.dgrade6D(map_h,        nhit_h,         rms_h,
+        self.maputilslib.dgradeXY6D(map_h,        nhit_h,         rms_h,
                                   self.map,     self.nhit,      self.rms,
                                   n0,           n1,             n2,
                                   n3,           n4,             n5, 
