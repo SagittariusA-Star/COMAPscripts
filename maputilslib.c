@@ -4,6 +4,7 @@
 #include <time.h>
 #include <math.h>
 
+// Coadd functions
 void coadd4D(float* map1, int* nhit1, float* rms1, 
              float* map2, int* nhit2, float* rms2,
              float* map,  int* nhit,  float* rms,
@@ -120,6 +121,7 @@ void coadd6D(float* map1, int* nhit1, float* rms1,
     }
 }
 
+// Subtract functions
 void subtract4D(float* map1, int* nhit1, float* rms1, 
                 float* map2, int* nhit2, float* rms2,
                 float* map,  int* nhit,  float* rms,
@@ -233,6 +235,7 @@ void subtract6D(float* map1, int* nhit1, float* rms1,
     }
 }
 
+// Downgrading functions on pixel level
 void dgradeXY4D(float* map_h, int* nhit_h, float* rms_h, 
               float* map_l, int* nhit_l, float* rms_l,
               int n0,       int n1,      int n2, 
@@ -403,6 +406,7 @@ void dgradeXY6D(float* map_h, int* nhit_h, float* rms_h,
     }
 }
 
+// Downgrading functions on frequency channel level
 void dgradeZ4D(float* map_h, int* nhit_h, float* rms_h, 
                float* map_l, int* nhit_l, float* rms_l,
                int n0,       int n1,      int n2, 
@@ -567,6 +571,7 @@ void dgradeZ6D(float* map_h, int* nhit_h, float* rms_h,
     }
 }
 
+// Downgrading functions on pixel and frequency channel level
 void dgradeXYZ4D(float* map_h, int* nhit_h, float* rms_h, 
                  float* map_l, int* nhit_l, float* rms_l,
                  int n0,       int n1,      int n2, 
@@ -748,6 +753,7 @@ void dgradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
     }   
 }
 
+// Upgrade functions on pixel level
 void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h, 
                 float* map_l, int* nhit_l, float* rms_l,
                 int n0,       int n1,      int n2, 
@@ -783,7 +789,6 @@ void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h,
         }
     }
 }
-
 
 void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h, 
                 float* map_l, int* nhit_l, float* rms_l,

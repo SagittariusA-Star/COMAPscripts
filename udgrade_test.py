@@ -186,6 +186,7 @@ maputilslib.dgradeXYZ4D(m_h, n_h,  r_h,
 print(np.allclose(A, n_h))
 print(np.allclose(B, n_l))
 """
+"""
 A = np.arange(3 * 3 * 3 * 3 * 3 * 3)
 A = A.reshape(3, 3, 3, 3, 3, 3)
 
@@ -198,8 +199,8 @@ for q in range(n0):
     for l in range(n1):
         for k in range(n2):
             for p in range(n3):
-                for a in range(n3):
-                    for b in range(n4):
+                for a in range(n4):
+                    for b in range(n5):
                         for i in range(a * numXY, (a + 1) * numXY):
                             for j in range(b * numXY, (b + 1) * numXY):
                                 B[q, l, k, p, i, j] = A[q, l, k, p, a, b]
@@ -245,4 +246,34 @@ print(m_l.shape, m_h.shape)
 
 print(np.allclose(A, n_l))
 print(np.allclose(B, n_h))
+"""
+
+A = np.arange(3 * 3 * 3 * 3 * 3 * 3)
+A = A.reshape(3, 3, 3, 3, 3, 3)
+
+numXY = 2
+numZ = 2
+n0, n1, n2, n3, n4, n5 = A.shape 
+N3, N4, N5 = n3 * numXY, n4 * numXY, n5 * numXY
+B = np.zeros((n0, n1, n2, N3, N4, N5))
+
+for q in range(n0):
+    for l in range(n1):
+        for k in range(n2):
+            for p in range(n3):
+                for a in range(n4):
+                    for b in range(n5):
+                        for z in range(p * numXY, (p + 1) * numXY):
+                            for i in range(a * numXY, (a + 1) * numXY):
+                                for j in range(b * numXY, (b + 1) * numXY):
+                                    B[q, l, k, z, i, j] = A[q, l, k, p, a, b]
+print(A[0, 0, 0, 0, :, :], "\n")
+print(A[0, 0, 0, 1, :, :], "\n")
+print(A[0, 0, 0, 2, :, :], "\n")
+print(B[0, 0, 0, 0, :, :], "\n")
+print(B[0, 0, 0, 1, :, :], "\n")
+print(B[0, 0, 0, 2, :, :], "\n")
+print(B[0, 0, 0, 3, :, :], "\n")
+print(B[0, 0, 0, 4, :, :], "\n")
+print(B[0, 0, 0, 5, :, :])
 
