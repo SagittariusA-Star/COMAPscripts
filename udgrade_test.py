@@ -125,7 +125,7 @@ maputilslib.dgradeZ6D(m_h, n_h, r_h,
 print(np.allclose(a, n_h))
 print(np.allclose(b, n_l))
 """
-
+"""
 A = np.arange(6 * 6 * 6 * 6)
 A = A.reshape(6, 6, 6, 6)
 
@@ -185,4 +185,64 @@ maputilslib.dgradeXYZ4D(m_h, n_h,  r_h,
 
 print(np.allclose(A, n_h))
 print(np.allclose(B, n_l))
+"""
+A = np.arange(3 * 3 * 3 * 3 * 3 * 3)
+A = A.reshape(3, 3, 3, 3, 3, 3)
+
+numXY = 2
+n0, n1, n2, n3, n4, n5 = A.shape 
+N4, N5 = n4 * numXY, n5 * numXY
+B = np.zeros((n0, n1, n2, n3, N4, N5))
+
+for q in range(n0):
+    for l in range(n1):
+        for k in range(n2):
+            for p in range(n3):
+                for a in range(n3):
+                    for b in range(n4):
+                        for i in range(a * numXY, (a + 1) * numXY):
+                            for j in range(b * numXY, (b + 1) * numXY):
+                                B[q, l, k, p, i, j] = A[q, l, k, p, a, b]
+print(A[0, 0, 0, 0, :, :], "\n")
+print(A[0, 0, 0, 1, :, :], "\n")
+print(B[0, 0, 0, 0, :, :])
+
+
+m_l = np.arange(3 * 3 * 3 * 3 * 3 * 3)
+m_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_float)
+
+n_l = np.arange(3 * 3 * 3 * 3 * 3 * 3)
+n_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_int)
+
+r_l = np.arange(3 * 3 * 3 * 3 * 3 * 3)
+r_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_float)
+
+numZ = int(2)
+numXY = int(2)
+n0, n1, n2, n3, n4, n5 = m_l.shape
+N4, N5 = n4 * numXY, n5 * numXY
+
+m_h = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+n_h = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
+r_h = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+
+
+maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared library
+
+float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
+int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
+maputilslib.ugradeXY6D.argtypes = [float32_array6, int32_array6, float32_array6,
+                                   float32_array6, int32_array6, float32_array6,
+                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                   ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+maputilslib.ugradeXY6D(m_h, n_h,  r_h,
+                       m_l, n_l,  r_l,
+                       n0,  n1,   n2,
+                       n3,  n4,   n5, 
+                       N4,  N5,   numXY)
+print(m_l.shape, m_h.shape)
+
+print(np.allclose(A, n_l))
+print(np.allclose(B, n_h))
 

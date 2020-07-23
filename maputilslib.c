@@ -747,3 +747,123 @@ void dgradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
         }
     }   
 }
+
+void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h, 
+                float* map_l, int* nhit_l, float* rms_l,
+                int n0,       int n1,      int n2, 
+                int n3,       int N2,      int N3,       
+                int num){
+                        
+    int p_h = N2 * N3;
+    int p_h1 = p_h * n1;
+    int idx_h;
+    
+    int p_l = n2 * n3;
+    int p_l1 = p_l * n1;
+    int idx_l;
+
+    int i, j, k ,l, a, b;
+
+    for(i=0; i < n0; i++){
+        for(j=0; j < n1; j++){
+            for(a = 0; a < n2; a++){
+                for(b = 0; b < n3; b++){
+                    idx_l = p_l1 * i + p_l * j + n3 * a + b;
+                    
+                    for(k = a * num; k < (a + 1) * num; k++){
+                        for(l = b * num; l < (b + 1) * num; l++){
+                            idx_h           = p_h1 * i + p_h * j + N3 * k + l;
+                            map_h[idx_h]    = map_l[idx_l];       
+                            nhit_h[idx_h]   = nhit_l[idx_l];       
+                            rms_h[idx_h]    = rms_l[idx_l];       
+                        }
+                    }
+                }      
+            }
+        }
+    }
+}
+
+
+void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h, 
+                float* map_l, int* nhit_l, float* rms_l,
+                int n0, int n1, int n2,
+                int n3, int n4, int N3,
+                int N4, int num){
+    int p_h = N3 * N4;
+    int p_h1 = p_h * n2;
+    int p_h2 =  p_h1 * n1;
+    int idx_h;
+    
+    int p_l = n3 * n4;
+    int p_l1 = p_l * n2;
+    int p_l2 =  p_l1 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, a, b;
+
+    for(i=0; i < n0; i++){
+        for(j = 0; j < n1; j++){
+            for(k=0; k < n2; k++){
+                for(a = 0; a < n3; a++){
+                    for(b = 0; b < n4; b++){                            
+                        idx_l = p_l2 * i + p_l1 * j + p_l * k + n4 * a + b;
+                        
+                        for(l = a * num; l < (a + 1) * num; l++){
+                            for(m = b * num; m < (b + 1) * num; m++){
+                                idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
+                                map_h[idx_h]    = map_l[idx_l];       
+                                nhit_h[idx_h]   = nhit_l[idx_l];       
+                                rms_h[idx_h]    = rms_l[idx_l];       
+                            }
+                        }
+                    }      
+                }
+            }
+        }
+    }
+}
+
+void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h, 
+                float* map_l,  int* nhit_l,  float* rms_l,
+                int n0,      int n1,     int n2, 
+                int n3,      int n4,     int n5,
+                int N4,      int N5,     int num){
+    int p_h = N4 * N5;
+    int p_h1 = p_h * n3;
+    int p_h2 =  p_h1 * n2;
+    int p_h3 =  p_h2 * n1;
+    int idx_h;
+
+    int p_l = n4 * n5;
+    int p_l1 = p_l * n3;
+    int p_l2 = p_l1 * n2;
+    int p_l3 = p_l2 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, n, a, b;
+
+    for(i=0; i < n0; i++){
+        for(j=0; j < n1; j++){
+            for(k=0; k < n2; k++){
+                for(l=0; l < n3; l++){
+                    for(a = 0; a < n4; a++){
+                        for(b = 0; b < n5; b++){
+                            
+                            idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * l + n5 * a + b;
+
+                            for(m = a * num; m < (a + 1) * num; m++){
+                                for(n = b * num; n < (b + 1) * num; n++){
+                                    idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
+                                    map_h[idx_h]    = map_l[idx_l];       
+                                    nhit_h[idx_h]   = nhit_l[idx_l];       
+                                    rms_h[idx_h]    = rms_l[idx_l];    
+                                }
+                            }
+                        }      
+                    }
+                }
+            }
+        }
+    }
+}
