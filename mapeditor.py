@@ -626,7 +626,6 @@ class Atlas:
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3)
     
-
     def C_coadd5D(self, map1, nhit1, rms1,
                         map2, nhit2, rms2):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
@@ -682,7 +681,6 @@ class Atlas:
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3)
     
-
     def C_subtract5D(self, map1, nhit1, rms1,
                            map2, nhit2, rms2):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
@@ -741,7 +739,6 @@ class Atlas:
                                     n3,         N2,         N3,
                                     self.merge_num)
 
-
     def C_dgradeXY5D(self, map_h, nhit_h, rms_h):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
         int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
@@ -783,7 +780,136 @@ class Atlas:
                                   n0,           n1,             n2,
                                   n3,           n4,             n5, 
                                   N4,           N5,             self.merge_num)
-                            
+
+    def C_dgradeZ4D(self, map_h, nhit_h, rms_h):
+            float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
+            int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
+            self.maputilslib.dgradeZ4D.argtypes = [float32_array4, int32_array4, float32_array4,
+                                                  float32_array4, int32_array4, float32_array4,
+                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+            n0, n1, n2, n3  = map_h.shape
+            N1              = int(n1 / self.merge_num)
+            
+            self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
+            self.nhit = np.zeros((n0, N1, n2, n3), dtype = ctypes.c_int)
+            self.rms = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
+
+            self.maputilslib.dgradeZ4D(map_h,    nhit_h,     rms_h,
+                                       self.map,   self.nhit,  self.rms,
+                                       n0,         n1,         n2,
+                                       n3,         N1,         self.merge_num)
+
+    def C_dgradeZ5D(self, map_h, nhit_h, rms_h):
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
+        self.maputilslib.dgradeZ5D.argtypes = [float32_array5, int32_array5, float32_array5,
+                                              float32_array5, int32_array5, float32_array5,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int]
+        n0, n1, n2, n3, n4 = map_h.shape
+        N2 = int(n2 / self.merge_num)
+        
+        self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
+        self.nhit = np.zeros((n0, n1, N2, n3, n4), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
+
+        self.maputilslib.dgradeZ5D(map_h,    nhit_h,     rms_h,
+                                  self.map, self.nhit,  self.rms,
+                                  n0,       n1,         n2,
+                                  n3,       n4,         N2,
+                                  self.merge_num)
+
+    def C_dgradeZ6D(self, map_h, nhit_h, rms_h):
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
+        self.maputilslib.dgradeZ6D.argtypes = [float32_array6, int32_array6, float32_array6,
+                                              float32_array6, int32_array6, float32_array6,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int]
+        n0, n1, n2, n3, n4, n5 = map_h.shape
+        N3 = int(n3 / self.merge_num)
+        
+        self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
+        self.nhit = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
+
+        self.maputilslib.dgradeZ6D(map_h,        nhit_h,         rms_h,
+                                  self.map,     self.nhit,      self.rms,
+                                  n0,           n1,             n2,
+                                  n3,           n4,             n5, 
+                                  N3,           self.merge_num)
+    
+    def C_dgradeXYZ4D(self, map_h, nhit_h, rms_h):
+            float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
+            int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
+            self.maputilslib.dgradeXYZ4D.argtypes = [float32_array4, int32_array4, float32_array4,
+                                                  float32_array4, int32_array4, float32_array4,
+                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+            n0, n1, n2, n3 = map_h.shape
+            N1, N2, N3 = int(n2 / self.merge_numZ), int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)
+            
+            self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
+            self.nhit = np.zeros((n0, N1, N2, N3), dtype = ctypes.c_int)
+            self.rms = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
+
+            self.maputilslib.dgradeXYZ4D(map_h,    nhit_h,          rms_h,
+                                         self.map, self.nhit,       self.rms,
+                                         n0,       n1,              n2,
+                                         n3,       N1,              N2,
+                                         N3,       self.merge_numZ  self.merge_numXY)
+
+    def C_dgradeXYZ5D(self, map_h, nhit_h, rms_h):
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
+        self.maputilslib.dgradeXYZ5D.argtypes = [float32_array5, int32_array5, float32_array5,
+                                              float32_array5, int32_array5, float32_array5,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int]
+        n0, n1, n2, n3, n4 = map_h.shape
+        N2, N3, N4 = int(n2 / self.merge_numZ), int(n3 / self.merge_numXY), int(n4 / self.merge_numXY)
+        
+        self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
+        self.nhit = np.zeros((n0, n1, N2, N3, N4), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
+
+        self.maputilslib.dgradeXYZ5D(map_h,    nhit_h,     rms_h,
+                                  self.map, self.nhit,  self.rms,
+                                  n0,       n1,         n2,
+                                  n3,       n4,         N2,
+                                  N3,       N4,         self.merge_numZ
+                                  self.merge_numXY)
+
+    def C_dgradeXYZ6D(self, map_h, nhit_h, rms_h):
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
+        self.maputilslib.dgradeXYZ6D.argtypes = [float32_array6, int32_array6, float32_array6,
+                                              float32_array6, int32_array6, float32_array6,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int]
+        n0, n1, n2, n3, n4, n5 = map_h.shape
+        N3, N4, N5 = int(n3 / self.merge_numZ), int(n4 / self.merge_numXY), int(n5 / self.merge_numXY)
+        
+        self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
+        self.nhit = np.zeros((n0, n1, n2, N3, N4, N5), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
+
+        self.maputilslib.dgradeXYZ6D(map_h,         nhit_h,         rms_h,
+                                  self.map,         self.nhit,      self.rms,
+                                  n0,               n1,             n2,
+                                  n3,               n4,             n5, 
+                                  N3,               N4,             N5
+                                  self.merge_numZ,  self.merge_numXY)
+    
+
     def add_rms(self, rms1, rms2):
         var1 = np.square(rms1)
         var2 = np.square(rms2)
