@@ -275,55 +275,40 @@ print(B[0, 0, 0, 3, :, :], "\n")
 print(B[0, 0, 0, 4, :, :], "\n")
 print(B[0, 0, 0, 5, :, :])
 
-
-m_l = np.arange(3 * 3 * 3 * 3 * 3 * 3)
-m_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_float)
-
 n_l = np.arange(3 * 3 * 3 * 3 * 3 * 3)
-n_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_int)
-
-r_l = np.arange(3 * 3 * 3 * 3 * 3 * 3)
-r_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_float)
+n_l = n_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_int)
 
 numZ = int(4)
-numXY = int(2)
-n0, n1, n2, n3, n4, n5 = m_l.shape
+n0, n1, n2, n3, n4, n5 = n_l.shape
 N3 = n3 * numZ
 
-m_h = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
 n_h = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
-r_h = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
 
 
 maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared library
 
 float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
 int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-maputilslib.ugradeZ6D.argtypes = [float32_array6, int32_array6, float32_array6,
-                                   float32_array6, int32_array6, float32_array6,
+maputilslib.ugradeZ6D_int.argtypes = [int32_array6, int32_array6,    ctypes.c_int,
                                    ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                    ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                   ctypes.c_int,   ctypes.c_int]
-print(m_l.shape, m_h.shape)
+                                   ctypes.c_int]
+print(n_l.shape, n_h.shape)
 
-maputilslib.ugradeZ6D(m_h, n_h,  r_h,
-                        m_l, n_l,  r_l,
-                        n0,  n1,   n2,
-                        n3,  n4,   n4,
-                        N3,  numZ)
+maputilslib.ugradeZ6D_int(n_h, n_l, n0,  n1, n2, n3, n4, n4, N3,  numZ)
 
 print(np.allclose(A, n_l))
 print(np.allclose(B, n_h))
 print("second")
-print(m_l[0, 0, 0, 0, :, :], "\n")
-print(m_l[0, 0, 0, 1, :, :], "\n")
-print(m_l[0, 0, 0, 2, :, :], "\n")
-print(m_h[0, 0, 0, 0, :, :], "\n")
-print(m_h[0, 0, 0, 1, :, :], "\n")
-print(m_h[0, 0, 0, 2, :, :], "\n")
-print(m_h[0, 0, 0, 3, :, :], "\n")
-print(m_h[0, 0, 0, 4, :, :], "\n")
-print(m_h[0, 0, 0, 5, :, :], "\n")
-print(m_h[0, 0, 0, 6, :, :], "\n")
-print(m_h[0, 0, 0, 7, :, :], "\n")
-print(m_h[0, 0, 0, 8, :, :], "\n")
+print(n_l[0, 0, 0, 0, :, :], "\n")
+print(n_l[0, 0, 0, 1, :, :], "\n")
+print(n_l[0, 0, 0, 2, :, :], "\n")
+print(n_h[0, 0, 0, 0, :, :], "\n")
+print(n_h[0, 0, 0, 1, :, :], "\n")
+print(n_h[0, 0, 0, 2, :, :], "\n")
+print(n_h[0, 0, 0, 3, :, :], "\n")
+print(n_h[0, 0, 0, 4, :, :], "\n")
+print(n_h[0, 0, 0, 5, :, :], "\n")
+print(n_h[0, 0, 0, 6, :, :], "\n")
+print(n_h[0, 0, 0, 7, :, :], "\n")
+print(n_h[0, 0, 0, 8, :, :], "\n")
