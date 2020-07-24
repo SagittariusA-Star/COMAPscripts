@@ -79,7 +79,7 @@ void coadd5D(float* map1, int* nhit1, float* rms1,
         }
     }
 }
-
+ 
 void coadd6D(float* map1, int* nhit1, float* rms1, 
              float* map2, int* nhit2, float* rms2,
              float* map,  int* nhit,  float* rms,
@@ -753,12 +753,12 @@ void dgradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
     }   
 }
 
+
+
 // Upgrade functions on pixel level
-void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h, 
-                float* map_l, int* nhit_l, float* rms_l,
-                int n0,       int n1,      int n2, 
-                int n3,       int N2,      int N3,       
-                int num){
+void ugradeXY4D_float(float* data_h,  float* data_l,   int n0,       
+                int n1,         int n2,          int n3,       
+                int N2,         int N3,          int num){
                         
     int p_h = N2 * N3;
     int p_h1 = p_h * n1;
@@ -779,9 +779,7 @@ void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h,
                     for(k = a * num; k < (a + 1) * num; k++){
                         for(l = b * num; l < (b + 1) * num; l++){
                             idx_h           = p_h1 * i + p_h * j + N3 * k + l;
-                            map_h[idx_h]    = map_l[idx_l];       
-                            nhit_h[idx_h]   = nhit_l[idx_l];       
-                            rms_h[idx_h]    = rms_l[idx_l];       
+                            data_h[idx_h]   = data_l[idx_l];             
                         }
                     }
                 }      
@@ -790,11 +788,10 @@ void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h,
     }
 }
 
-void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h, 
-                float* map_l, int* nhit_l, float* rms_l,
-                int n0, int n1, int n2,
-                int n3, int n4, int N3,
-                int N4, int num){
+void ugradeXY5D_float(float* data_h,  float* data_l,  int n0, 
+                int n1,         int n2,         int n3, 
+                int n4,         int N3,         int N4, 
+                int num){
     int p_h = N3 * N4;
     int p_h1 = p_h * n2;
     int p_h2 =  p_h1 * n1;
@@ -817,9 +814,7 @@ void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h,
                         for(l = a * num; l < (a + 1) * num; l++){
                             for(m = b * num; m < (b + 1) * num; m++){
                                 idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
-                                map_h[idx_h]    = map_l[idx_l];       
-                                nhit_h[idx_h]   = nhit_l[idx_l];       
-                                rms_h[idx_h]    = rms_l[idx_l];       
+                                data_h[idx_h]    = data_l[idx_l];              
                             }
                         }
                     }      
@@ -829,11 +824,10 @@ void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h,
     }
 }
 
-void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h, 
-                float* map_l,  int* nhit_l,  float* rms_l,
-                int n0,      int n1,     int n2, 
-                int n3,      int n4,     int n5,
-                int N4,      int N5,     int num){
+void ugradeXY6D_float(float* data_h, float* data_l,  int n0,      
+                int n1,       int n2,       int n3,      
+                int n4,       int n5,       int N4,      
+                int N5,       int num){
     int p_h = N4 * N5;
     int p_h1 = p_h * n3;
     int p_h2 =  p_h1 * n2;
@@ -860,9 +854,7 @@ void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h,
                             for(m = a * num; m < (a + 1) * num; m++){
                                 for(n = b * num; n < (b + 1) * num; n++){
                                     idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
-                                    map_h[idx_h]    = map_l[idx_l];       
-                                    nhit_h[idx_h]   = nhit_l[idx_l];       
-                                    rms_h[idx_h]    = rms_l[idx_l]; 
+                                    data_h[idx_h]    = data_l[idx_l];        
                                 }
                             }
                         }      
@@ -874,10 +866,9 @@ void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h,
 }
 
 // Upgrading functions on frequency channel level
-void ugradeZ4D(float* map_h, int* nhit_h, float* rms_h, 
-               float* map_l, int* nhit_l, float* rms_l,
-               int n0,       int n1,      int n2, 
-               int n3,       int N1,      int num){
+void ugradeZ4D_float(float* data_h,   float* data_l,    int n0,       
+               int n1,          int n2,         int n3,       
+               int N1,          int num){
 
     int p_h = n2 * n3;
     int p_h1 = p_h * N1;
@@ -896,10 +887,7 @@ void ugradeZ4D(float* map_h, int* nhit_h, float* rms_h,
                     for(j = a * num; j < (a + 1) * num; j++){    
                         idx_l = p_l1 * i + p_l * a + n3 * k + l;
                         idx_h = p_h1 * i + p_h * j + n3 * k + l;
-                        map_h[idx_h]    = map_l[idx_l];       
-                        nhit_h[idx_h]   = nhit_l[idx_l];       
-                        rms_h[idx_h]    = rms_l[idx_l]; 
-                                
+                        data_h[idx_h]    = data_l[idx_l];       
                     }
                 }
             }
@@ -907,11 +895,9 @@ void ugradeZ4D(float* map_h, int* nhit_h, float* rms_h,
     }
 }
 
-void ugradeZ5D(float* map_h, int* nhit_h, float* rms_h, 
-               float* map_l, int* nhit_l, float* rms_l,
-               int n0, int n1, int n2,
-               int n3, int n4, int N2,
-               int num){
+void ugradeZ5D_float(float* data_h,   float* data_l,    int n0, 
+               int n1,          int n2,         int n3, 
+               int n4,          int N2,         int num){
     
     int p_h = n3 * n4;
     int p_h1 = p_h * N2;
@@ -933,9 +919,7 @@ void ugradeZ5D(float* map_h, int* nhit_h, float* rms_h,
                         for(k = a * num; k < (a + 1) * num; k++){    
                             idx_l = p_l2 * i + p_l1 * j + p_l * a + n4 * l + m;
                             idx_h = p_h2 * i + p_h1 * j + p_h * k + n4 * l + m;
-                            map_h[idx_h]    = map_l[idx_l];       
-                            nhit_h[idx_h]   = nhit_l[idx_l];       
-                            rms_h[idx_h]    = rms_l[idx_l];
+                            data_h[idx_h]    = data_l[idx_l];       
                         }
                     }     
                 }
@@ -944,11 +928,10 @@ void ugradeZ5D(float* map_h, int* nhit_h, float* rms_h,
     }
 }
 
-void ugradeZ6D(float* map_h, int* nhit_h, float* rms_h, 
-               float* map_l, int* nhit_l,  float* rms_l,
-               int n0,       int n1,     int n2, 
-               int n3,       int n4,     int n5,
-               int N3,       int num){
+void ugradeZ6D_float(float* data_h,   float* data_l,    int n0,       
+               int n1,          int n2,         int n3,       
+               int n4,          int n5,         int N3,       
+               int num){
 
     int p_h = n4 * n5;
     int p_h1 = p_h * N3;
@@ -973,9 +956,7 @@ void ugradeZ6D(float* map_h, int* nhit_h, float* rms_h,
                             for(l = a * num; l < (a + 1) * num; l++){
                                 idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * a + n5 * m + n;
                                 idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + n5 * m + n;
-                                map_h[idx_h]    = map_l[idx_l];       
-                                nhit_h[idx_h]   = nhit_l[idx_l];       
-                                rms_h[idx_h]    = rms_l[idx_l];
+                                data_h[idx_h]    = data_l[idx_l];       
                             }
                         }
                     }
@@ -986,11 +967,10 @@ void ugradeZ6D(float* map_h, int* nhit_h, float* rms_h,
 }
 
 // Upgrading functions on pixel and frequency channel level
-void ugradeXYZ4D(float* map_h, int* nhit_h, float* rms_h, 
-                 float* map_l, int* nhit_l, float* rms_l,
-                 int n0,       int n1,      int n2, 
-                 int n3,       int N1,      int N2,       
-                 int N3,       int numZ,    int numXY){
+void ugradeXYZ4D_float(float* data_h,     float* data_l,    int n0,       
+                 int n1,            int n2,         int n3,       
+                 int N1,            int N2,         int N3,       
+                 int numZ,          int numXY){
 
     int p_h = N2 * N3;
     int p_h1 = p_h * N1;
@@ -1011,10 +991,7 @@ void ugradeXYZ4D(float* map_h, int* nhit_h, float* rms_h,
                             for(l = y * numXY; l < (y + 1) * numXY; l++){
                                 idx_l = p_l1 * i + p_l * z + n3 * x + y;
                                 idx_h = p_h1 * i + p_h * j + N3 * k + l;
-                                map_h[idx_h]    = map_l[idx_l];       
-                                nhit_h[idx_h]   = nhit_l[idx_l];       
-                                rms_h[idx_h]    = rms_l[idx_l]; 
-                                
+                                data_h[idx_h]    = data_l[idx_l];       
                             }
                         }
                     }
@@ -1024,12 +1001,10 @@ void ugradeXYZ4D(float* map_h, int* nhit_h, float* rms_h,
     }   
 }
 
-void ugradeXYZ5D(float* map_h, int* nhit_h, float* rms_h, 
-                 float* map_l, int* nhit_l, float* rms_l,
-                 int n0,       int n1,      int n2, 
-                 int n3,       int n4,      int N2,       
-                 int N3,       int N4,      int numZ,     
-                 int numXY){
+void ugradeXYZ5D_float(float* data_h,     float* data_l,    int n0,       
+                 int n1,            int n2,         int n3,       
+                 int n4,            int N2,         int N3,       
+                 int N4,            int numZ,       int numXY){
 
     int p_h = N3 * N4;
     int p_h1 = p_h * N2;
@@ -1053,9 +1028,7 @@ void ugradeXYZ5D(float* map_h, int* nhit_h, float* rms_h,
                                 for(m = y * numXY; m < (y + 1) * numXY; m++){
                                     idx_l = p_l2 * i + p_l1 * j + p_l * z + n4 * x + y;
                                     idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
-                                    map_h[idx_h]    = map_l[idx_l];       
-                                    nhit_h[idx_h]   = nhit_l[idx_l];       
-                                    rms_h[idx_h]    = rms_l[idx_l]; 
+                                    data_h[idx_h]    = data_l[idx_l];        
                                 }
                             }
                         }
@@ -1066,12 +1039,11 @@ void ugradeXYZ5D(float* map_h, int* nhit_h, float* rms_h,
     }   
 }
 
-void ugradeXYZ6D(float* map_h, int* nhit_h, float* rms_h, 
-                 float* map_l, int* nhit_l, float* rms_l,
-                 int n0,       int n1,      int n2, 
-                 int n3,       int n4,      int n5,
-                 int N3,       int N4,      int N5, 
-                 int numZ,     int numXY){
+void ugradeXYZ6D_float(float* data_h,     float* data_l,    int n0,       
+                 int n1,            int n2,         int n3,       
+                 int n4,            int n5,         int N3,       
+                 int N4,            int N5,         int numZ,     
+                 int numXY){
     int p_h = N4 * N5;
     int p_h1 = p_h * N3;
     int p_h2 =  p_h1 * n2;
@@ -1097,9 +1069,336 @@ void ugradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
                                     for(n = y * numXY; n < (y + 1) * numXY; n++){
                                         idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * z + n5 * x + y;
                                         idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
-                                        map_h[idx_h]    = map_l[idx_l];       
-                                        nhit_h[idx_h]   = nhit_l[idx_l];       
-                                        rms_h[idx_h]    = rms_l[idx_l];
+                                        data_h[idx_h]    = data_l[idx_l];       
+                                    }
+                                }
+                            }
+                        }        
+                    }
+                }
+            }
+        }
+    }   
+}
+
+
+
+
+// Upgrade functions on pixel level
+void ugradeXY4D_int(int* data_h,  int* data_l,   int n0,       
+                int n1,         int n2,          int n3,       
+                int N2,         int N3,          int num){
+                        
+    int p_h = N2 * N3;
+    int p_h1 = p_h * n1;
+    int idx_h;
+    
+    int p_l = n2 * n3;
+    int p_l1 = p_l * n1;
+    int idx_l;
+
+    int i, j, k ,l, a, b;
+
+    for(i=0; i < n0; i++){
+        for(j=0; j < n1; j++){
+            for(a = 0; a < n2; a++){
+                for(b = 0; b < n3; b++){
+                    idx_l = p_l1 * i + p_l * j + n3 * a + b;
+                    
+                    for(k = a * num; k < (a + 1) * num; k++){
+                        for(l = b * num; l < (b + 1) * num; l++){
+                            idx_h           = p_h1 * i + p_h * j + N3 * k + l;
+                            data_h[idx_h]   = data_l[idx_l];             
+                        }
+                    }
+                }      
+            }
+        }
+    }
+}
+
+void ugradeXY5D_int(int* data_h,  int* data_l,  int n0, 
+                int n1,         int n2,         int n3, 
+                int n4,         int N3,         int N4, 
+                int num){
+    int p_h = N3 * N4;
+    int p_h1 = p_h * n2;
+    int p_h2 =  p_h1 * n1;
+    int idx_h;
+    
+    int p_l = n3 * n4;
+    int p_l1 = p_l * n2;
+    int p_l2 =  p_l1 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, a, b;
+
+    for(i=0; i < n0; i++){
+        for(j = 0; j < n1; j++){
+            for(k=0; k < n2; k++){
+                for(a = 0; a < n3; a++){
+                    for(b = 0; b < n4; b++){                            
+                        idx_l = p_l2 * i + p_l1 * j + p_l * k + n4 * a + b;
+                        
+                        for(l = a * num; l < (a + 1) * num; l++){
+                            for(m = b * num; m < (b + 1) * num; m++){
+                                idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
+                                data_h[idx_h]    = data_l[idx_l];              
+                            }
+                        }
+                    }      
+                }
+            }
+        }
+    }
+}
+
+void ugradeXY6D_int(int* data_h, int* data_l,  int n0,      
+                int n1,       int n2,       int n3,      
+                int n4,       int n5,       int N4,      
+                int N5,       int num){
+    int p_h = N4 * N5;
+    int p_h1 = p_h * n3;
+    int p_h2 =  p_h1 * n2;
+    int p_h3 =  p_h2 * n1;
+    int idx_h;
+
+    int p_l = n4 * n5;
+    int p_l1 = p_l * n3;
+    int p_l2 = p_l1 * n2;
+    int p_l3 = p_l2 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, n, a, b;
+
+    for(i=0; i < n0; i++){
+        for(j=0; j < n1; j++){
+            for(k=0; k < n2; k++){
+                for(l=0; l < n3; l++){
+                    for(a = 0; a < n4; a++){
+                        for(b = 0; b < n5; b++){
+                            
+                            idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * l + n5 * a + b;
+
+                            for(m = a * num; m < (a + 1) * num; m++){
+                                for(n = b * num; n < (b + 1) * num; n++){
+                                    idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
+                                    data_h[idx_h]    = data_l[idx_l];        
+                                }
+                            }
+                        }      
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Upgrading functions on frequency channel level
+void ugradeZ4D_int(int* data_h,   int* data_l,    int n0,       
+               int n1,          int n2,         int n3,       
+               int N1,          int num){
+
+    int p_h = n2 * n3;
+    int p_h1 = p_h * N1;
+    int idx_h;
+    
+    int p_l = n2 * n3;
+    int p_l1 = p_l * n1;
+    int idx_l;
+
+    int i, j, k ,l, a;
+
+    for(i=0; i < n0; i++){
+        for(a = 0; a < n1; a++){
+            for(k = 0; k < n2; k++){
+                for(l = 0; l < n3; l++){
+                    for(j = a * num; j < (a + 1) * num; j++){    
+                        idx_l = p_l1 * i + p_l * a + n3 * k + l;
+                        idx_h = p_h1 * i + p_h * j + n3 * k + l;
+                        data_h[idx_h]    = data_l[idx_l];       
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ugradeZ5D_int(int* data_h,   int* data_l,    int n0, 
+               int n1,          int n2,         int n3, 
+               int n4,          int N2,         int num){
+    
+    int p_h = n3 * n4;
+    int p_h1 = p_h * N2;
+    int p_h2 =  p_h1 * n1;
+    int idx_h;
+    
+    int p_l = n3 * n4;
+    int p_l1 = p_l * n2;
+    int p_l2 =  p_l1 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, a;
+
+    for(i=0; i < n0; i++){
+        for(j = 0; j < n1; j++){
+            for(a = 0; a < n2; a++){
+                for(l = 0; l < n3; l++){
+                    for(m = 0; m < n4; m++){
+                        for(k = a * num; k < (a + 1) * num; k++){    
+                            idx_l = p_l2 * i + p_l1 * j + p_l * a + n4 * l + m;
+                            idx_h = p_h2 * i + p_h1 * j + p_h * k + n4 * l + m;
+                            data_h[idx_h]    = data_l[idx_l];       
+                        }
+                    }     
+                }
+            }
+        }
+    }
+}
+
+void ugradeZ6D_int(int* data_h,   int* data_l,    int n0,       
+               int n1,          int n2,         int n3,       
+               int n4,          int n5,         int N3,       
+               int num){
+
+    int p_h = n4 * n5;
+    int p_h1 = p_h * N3;
+    int p_h2 =  p_h1 * n2;
+    int p_h3 =  p_h2 * n1;
+    int idx_h;
+
+    int p_l = n4 * n5;
+    int p_l1 = p_l * n3;
+    int p_l2 = p_l1 * n2;
+    int p_l3 = p_l2 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, n, a;
+
+    for(i=0; i < n0; i++){
+        for(j=0; j < n1; j++){
+            for(k=0; k < n2; k++){
+                for(a = 0; a < n3; a++){
+                    for(m = 0; m < n4; m++){
+                        for(n = 0; n < n5; n++){
+                            for(l = a * num; l < (a + 1) * num; l++){
+                                idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * a + n5 * m + n;
+                                idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + n5 * m + n;
+                                data_h[idx_h]    = data_l[idx_l];       
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Upgrading functions on pixel and frequency channel level
+void ugradeXYZ4D_int(int* data_h,     int* data_l,    int n0,       
+                 int n1,            int n2,         int n3,       
+                 int N1,            int N2,         int N3,       
+                 int numZ,          int numXY){
+
+    int p_h = N2 * N3;
+    int p_h1 = p_h * N1;
+    int idx_h;
+    
+    int p_l = n2 * n3;
+    int p_l1 = p_l * n1;
+    int idx_l;
+
+    int i, j, k ,l, x, y, z;
+
+    for(i=0; i < n0; i++){
+        for(z = 0; z < n1; z++){
+            for(x = 0; x < n2; x++){
+                for(y = 0; y < n3; y++){
+                    for(j = z * numZ; j < (z + 1) * numZ; j++){
+                        for(k = x * numXY; k < (x + 1) * numXY; k++){
+                            for(l = y * numXY; l < (y + 1) * numXY; l++){
+                                idx_l = p_l1 * i + p_l * z + n3 * x + y;
+                                idx_h = p_h1 * i + p_h * j + N3 * k + l;
+                                data_h[idx_h]    = data_l[idx_l];       
+                            }
+                        }
+                    }
+                }        
+            }
+        }
+    }   
+}
+
+void ugradeXYZ5D_int(int* data_h,     int* data_l,    int n0,       
+                 int n1,            int n2,         int n3,       
+                 int n4,            int N2,         int N3,       
+                 int N4,            int numZ,       int numXY){
+
+    int p_h = N3 * N4;
+    int p_h1 = p_h * N2;
+    int p_h2 =  p_h1 * n1;
+    int idx_h;
+    
+    int p_l = n3 * n4;
+    int p_l1 = p_l * n2;
+    int p_l2 =  p_l1 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, x, y, z;
+    
+    for(i=0; i < n0; i++){
+        for(j=0; j < n1; j++){
+            for(z = 0; z < n2; z++){
+                for(x = 0; x < n3; x++){
+                    for(y = 0; y < n4; y++){
+                        for(k = z * numZ; k < (z + 1) * numZ; k++){
+                            for(l = x * numXY; l < (x + 1) * numXY; l++){
+                                for(m = y * numXY; m < (y + 1) * numXY; m++){
+                                    idx_l = p_l2 * i + p_l1 * j + p_l * z + n4 * x + y;
+                                    idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
+                                    data_h[idx_h]    = data_l[idx_l];        
+                                }
+                            }
+                        }
+                    }        
+                }
+            }
+        }
+    }   
+}
+
+void ugradeXYZ6D_int(int* data_h,     int* data_l,    int n0,       
+                 int n1,            int n2,         int n3,       
+                 int n4,            int n5,         int N3,       
+                 int N4,            int N5,         int numZ,     
+                 int numXY){
+    int p_h = N4 * N5;
+    int p_h1 = p_h * N3;
+    int p_h2 =  p_h1 * n2;
+    int p_h3 =  p_h2 * n1;
+    int idx_h;
+
+    int p_l = n4 * n5;
+    int p_l1 = p_l * n3;
+    int p_l2 = p_l1 * n2;
+    int p_l3 = p_l2 * n1;
+    int idx_l;
+
+    int i, j, k ,l, m, n, x, y, z;
+
+    for(i=0; i < n0; i++){
+        for(j=0; j < n1; j++){
+            for(k=0; k < n2; k++){
+                for(z = 0; z < n3; z++){    
+                    for(x = 0; x < n4; x++){
+                        for(y = 0; y < n5; y++){
+                            for(l = z * numZ; l < (z + 1) * numZ; l++){
+                                for(m = x * numXY; m < (x + 1) * numXY; m++){
+                                    for(n = y * numXY; n < (y + 1) * numXY; n++){
+                                        idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * z + n5 * x + y;
+                                        idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
+                                        data_h[idx_h]    = data_l[idx_l];       
                                     }
                                 }
                             }

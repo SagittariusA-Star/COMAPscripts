@@ -305,17 +305,17 @@ class Atlas:
                 rms =  dfile["rms"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
         return map, nhit, rms
         
-    def writeMap(self, jackmode = None, write_the_rest = False, custom_data = None, custom_name = None):
-        if custom_data != None and custom_name:
-            if map_name in self.ofile and self.access == "a":
+    def writeMap(self, jackmode = None, write_the_rest = False, custom_name = None):
+        if custom_name != None:
+            if custom_name in self.ofile and self.access == "a":
                 """
                 To overwrite existing dataset with different shape, the existing
                 dataset must first be deleted.
                 """   
-                del self.ofile[map_name]
-                self.ofile.create_dataset(custom_name, data = custom_data)
+                del self.ofile[custom_name]
+                self.ofile.create_dataset(custom_name, data = self.map)
             else:
-                self.ofile.create_dataset(custom_name, data = custom_data)
+                self.ofile.create_dataset(custom_name, data = self.map)
 
         elif jackmode != None:
             map_name    = "jackknives/map_" + jackmode
@@ -563,197 +563,281 @@ class Atlas:
             self.writeMap(write_the_rest = True)
 
         if self.infile1 != None and self.infile2 == None:
+            data_names = ["map", "nhit", "rms"]
             if self.everything:
                 if "jackknives" in self.dfile1:
                     for jack in self.jk:
                         self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
+                        data_list = [self.map1, self.nhit1, self.rms1]
                         if self.tool == "dgradeXY":
                             if len(self.map1.shape) == 6:
                                 self.C_dgradeXY6D(self.map1, self.nhit1, self.rms1)
-                            
+                                self.writeMap(jack)
+
                             elif len(self.map1.shape) == 5:
                                 self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
-                        
+                                self.writeMap(jack)
+
                         elif self.tool == "dgradeZ":
                             if len(self.map1.shape) == 6:
                                 self.C_dgradeZ6D(self.map1, self.nhit1, self.rms1)
-                            
+                                self.writeMap(jack)
+
                             elif len(self.map1.shape) == 5:
                                 self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+                                self.writeMap(jack)
 
                         elif self.tool == "dgradeXYZ":
                             if len(self.map1.shape) == 6:
                                 self.C_dgradeXYZ6D(self.map1, self.nhit1, self.rms1)
-                            
+                                self.writeMap(jack)
+
                             elif len(self.map1.shape) == 5:
                                 self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
-                        
+                                self.writeMap(jack)
+                                
                         elif self.tool == "ugradeXY":
                             if len(self.map1.shape) == 6:
-                                self.C_ugradeXY6D(self.map1, self.nhit1, self.rms1)
+                                for i in range(3):
+                                    self.C_ugradeXY6D(data_list[i])
+                                    name = "jackknives/" + data_names[i] + "_" + jack
+                                    self.writeMap(custom_name =  name)
                             
                             elif len(self.map1.shape) == 5:
-                                self.C_ugradeXY5D(self.map1, self.nhit1, self.rms1)
-                        
+                                for i in range(3):
+                                    self.C_ugradeXY5D(data_list[i])
+                                    name = "jackknives/" + data_names[i] + "_" + jack
+                                    self.writeMap(custom_name =  name)
+                                                    
                         elif self.tool == "ugradeZ":
                             if len(self.map1.shape) == 6:
-                                self.C_ugradeZ6D(self.map1, self.nhit1, self.rms1)
-                            
+                                for i in range(3):
+                                    self.C_ugradeZ6D(data_list[i])
+                                    name = "jackknives/" + data_names[i] + "_" + jack
+                                    self.writeMap(custom_name =  name)
+                                             
                             elif len(self.map1.shape) == 5:
-                                self.C_ugradeZ5D(self.map1, self.nhit1, self.rms1)
-
+                                for i in range(3):
+                                    self.C_ugradeZ5D(data_list[i])
+                                    name = "jackknives/" + data_names[i] + "_" + jack
+                                    self.writeMap(custom_name =  name)
+                                             
                         elif self.tool == "ugradeXYZ":
                             if len(self.map1.shape) == 6:
-                                self.C_ugradeXYZ6D(self.map1, self.nhit1, self.rms1)
-                            
+                                for i in range(3):
+                                    self.C_ugradeXYZ6D(data_list[i])
+                                    name = "jackknives/" + data_names[i] + "_" + jack
+                                    self.writeMap(custom_name =  name)
+                                             
                             elif len(self.map1.shape) == 5:
-                                self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
-
-                        self.writeMap(jack)
+                                for i in range(3):
+                                    self.C_ugradeXYZ5D(data_list[i])
+                                    name = "jackknives/" + data_names[i] + "_" + jack
+                                    self.writeMap(custom_name =  name)
+                                             
                 self.full = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                data_list = [self.map1, self.nhit1, self.rms1]
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
                 
                 elif self.tool == "dgradeZ":
                     self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
                 
                 elif self.tool == "dgradeXYZ":
                     self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
                 
                 elif self.tool == "ugradeXY":
-                    self.C_ugradeXY5D(self.map1, self.nhit1, self.rms1)
-                
+                    for i in range(3):
+                        self.C_ugradeXY5D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i])
+                                    
                 elif self.tool == "ugradeZ":
-                    self.C_ugradeZ5D(self.map1, self.nhit1, self.rms1)
-                
+                    for i in range(3):
+                        self.C_ugradeZ5D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i])
+
                 elif self.tool == "ugradeXYZ":
-                    self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
-                
-                self.writeMap()
-                
+                    for i in range(3):
+                        self.C_ugradeXYZ5D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i])
+
                 self.full = False
                 self.beam = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                data_list = [self.map1, self.nhit1, self.rms1]
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY4D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
 
                 elif self.tool == "dgradeZ":
                     self.C_dgradeZ4D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
 
                 elif self.tool == "dgradeXYZ":
                     self.C_dgradeXYZ4D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
 
                 elif self.tool == "ugradeXY":
-                    self.C_ugradeXY4D(self.map1, self.nhit1, self.rms1)
+                    for i in range(3):
+                        self.C_ugradeXY4D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i] + "_beam")
 
                 elif self.tool == "ugradeZ":
-                    self.C_ugradeZ4D(self.map1, self.nhit1, self.rms1)
+                    for i in range(3):
+                        self.C_ugradeZ4D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i] + "_beam")
 
                 elif self.tool == "ugradeXYZ":
-                    self.C_ugradeXYZ4D(self.map1, self.nhit1, self.rms1)
-
-                self.writeMap()
+                    for i in range(3):
+                        self.C_ugradeXYZ4D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i] + "_beam")
+                
                 self.beam = False
+
             if self.jack:
                 for jack in self.jk:
                     self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
+                    data_list = [self.map1, self.nhit1, self.rms1]
                     if self.tool == "dgradeXY":
                         if len(self.map1.shape) == 6:
                             self.C_dgradeXY6D(self.map1, self.nhit1, self.rms1)
-                        
+                            self.writeMap(jack)
+
                         elif len(self.map1.shape) == 5:
                             self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
-                        
+                            self.writeMap(jack)
+
                     elif self.tool == "dgradeZ":
                         if len(self.map1.shape) == 6:
                             self.C_dgradeZ6D(self.map1, self.nhit1, self.rms1)
-                        
+                            self.writeMap(jack)
+
                         elif len(self.map1.shape) == 5:
                             self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+                            self.writeMap(jack)
 
                     elif self.tool == "dgradeXYZ":
                         if len(self.map1.shape) == 6:
                             self.C_dgradeXYZ6D(self.map1, self.nhit1, self.rms1)
-                        
+                            self.writeMap(jack)
+
                         elif len(self.map1.shape) == 5:
                             self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
-
+                            self.writeMap(jack)
+                            
                     elif self.tool == "ugradeXY":
                         if len(self.map1.shape) == 6:
-                            self.C_ugradeXY6D(self.map1, self.nhit1, self.rms1)
+                            for i in range(3):
+                                self.C_ugradeXY6D(data_list[i])
+                                name = "jackknives/" + data_names[i] + "_" + jack
+                                self.writeMap(custom_name =  name)
                         
                         elif len(self.map1.shape) == 5:
-                            self.C_ugradeXY5D(self.map1, self.nhit1, self.rms1)
-                        
+                            for i in range(3):
+                                self.C_ugradeXY5D(data_list[i])
+                                name = "jackknives/" + data_names[i] + "_" + jack
+                                self.writeMap(custom_name =  name)
+                                                
                     elif self.tool == "ugradeZ":
                         if len(self.map1.shape) == 6:
-                            self.C_ugradeZ6D(self.map1, self.nhit1, self.rms1)
-                        
+                            for i in range(3):
+                                self.C_ugradeZ6D(data_list[i])
+                                name = "jackknives/" + data_names[i] + "_" + jack
+                                self.writeMap(custom_name =  name)
+                                            
                         elif len(self.map1.shape) == 5:
-                            self.C_ugradeZ5D(self.map1, self.nhit1, self.rms1)
-
+                            for i in range(3):
+                                self.C_ugradeZ5D(data_list[i])
+                                name = "jackknives/" + data_names[i] + "_" + jack
+                                self.writeMap(custom_name =  name)
+                                            
                     elif self.tool == "ugradeXYZ":
                         if len(self.map1.shape) == 6:
-                            self.C_ugradeXYZ6D(self.map1, self.nhit1, self.rms1)
-                        
+                            for i in range(3):
+                                self.C_ugradeXYZ6D(data_list[i])
+                                name = "jackknives/" + data_names[i] + "_" + jack
+                                self.writeMap(custom_name =  name)
+                                            
                         elif len(self.map1.shape) == 5:
-                            self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
-
-                    self.writeMap(jack)
-
+                            for i in range(3):
+                                self.C_ugradeXYZ5D(data_list[i])
+                                name = "jackknives/" + data_names[i] + "_" + jack
+                                self.writeMap(custom_name =  name)
+                
             if self.full:
                 _beam = self.beam
                 self.beam = False
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                data_list = [self.map1, self.nhit1, self.rms1]
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
                 
                 elif self.tool == "dgradeZ":
                     self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
                 
                 elif self.tool == "dgradeXYZ":
                     self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
-
+                    self.writeMap()
+                
                 elif self.tool == "ugradeXY":
-                    self.C_ugradeXY5D(self.map1, self.nhit1, self.rms1)
-                
+                    for i in range(3):
+                        self.C_ugradeXY5D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i])
+                                    
                 elif self.tool == "ugradeZ":
-                    self.C_ugradeZ5D(self.map1, self.nhit1, self.rms1)
-                
+                    for i in range(3):
+                        self.C_ugradeZ5D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i])
+
                 elif self.tool == "ugradeXYZ":
-                    self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
-            
-                self.writeMap()
+                    for i in range(3):
+                        self.C_ugradeXYZ5D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i])
+                
                 self.beam = _beam
         
             if self.beam:
                 _full = self.full
                 self.full = False
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
+                data_list = [self.map1, self.nhit1, self.rms1]
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY4D(self.map1, self.nhit1, self.rms1)
-                
+                    self.writeMap()
+
                 elif self.tool == "dgradeZ":
                     self.C_dgradeZ4D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
 
                 elif self.tool == "dgradeXYZ":
                     self.C_dgradeXYZ4D(self.map1, self.nhit1, self.rms1)
+                    self.writeMap()
 
                 elif self.tool == "ugradeXY":
-                    self.C_ugradeXY4D(self.map1, self.nhit1, self.rms1)
-                
+                    for i in range(3):
+                        self.C_ugradeXY4D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i] + "_beam")
+
                 elif self.tool == "ugradeZ":
-                    self.C_ugradeZ4D(self.map1, self.nhit1, self.rms1)
+                    for i in range(3):
+                        self.C_ugradeZ4D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i] + "_beam")
 
                 elif self.tool == "ugradeXYZ":
-                    self.C_ugradeXYZ4D(self.map1, self.nhit1, self.rms1)
-
-                self.writeMap()
+                    for i in range(3):
+                        self.C_ugradeXYZ4D(data_list[i])
+                        self.writeMap(custom_name =  data_names[i] + "_beam")
+                
                 self.full = _full
             self.writeMap(write_the_rest = True)            
 
@@ -1058,198 +1142,296 @@ class Atlas:
                                   N3,               N4,             N5,
                                   self.merge_numZ,  self.merge_numXY)
 
-    def C_ugradeXY4D(self, map_l, nhit_l, rms_l):
+
+
+
+    def C_ugradeXY4D(self, map_l):
         float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
         int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeXY4D.argtypes = [float32_array4, int32_array4, float32_array4,
-                                                float32_array4, int32_array4, float32_array4,
-                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                ctypes.c_int]
+        
         n0, n1, n2, n3 = map_l.shape
         N2, N3 = n2 * self.merge_numXY, n3 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, n1, N2, N3), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
+        if map_l.dtype == np.float32:
+            self.maputilslib.ugradeXY4D_float.argtypes = [float32_array4,   float32_array4,     ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int]
 
-        self.maputilslib.ugradeXY4D(self.map,   self.nhit,  self.rms,
-                                    map_l,    nhit_l,     rms_l,
-                                    n0,         n1,         n2,
-                                    n3,         N2,         N3,
-                                    self.merge_numXY)
+            self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
 
-    def C_ugradeXY5D(self, map_l, nhit_l, rms_l):
+            self.maputilslib.ugradeXY4D_float(self.map,   map_l,    n0,         
+                                            n1,         n2,         n3,         
+                                            N2,         N3,         self.merge_numXY)
+        else:
+            self.maputilslib.ugradeXY4D_int.argtypes = [int32_array4,   int32_array4,     ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int]
+
+            self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeXY4D_int(self.map,   map_l,    n0,         
+                                            n1,         n2,         n3,         
+                                            N2,         N3,         self.merge_numXY)
+    
+    def C_ugradeXY5D(self, map_l):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
         int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeXY5D.argtypes = [float32_array5, int32_array5, float32_array5,
-                                              float32_array5, int32_array5, float32_array5,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int]
+        
         n0, n1, n2, n3, n4 = map_l.shape
         N3, N4 = n3 * self.merge_numXY, n4 * self.merge_numXY
         
-        self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
+        if map_l.dtype == np.float32:
 
-        self.maputilslib.ugradeXY5D(self.map, self.nhit,  self.rms,
-                                    map_l,    nhit_l,     rms_l,
-                                    n0,       n1,         n2,
-                                    n3,       n4,         N3,
-                                    N4,       self.merge_numXY)
+            self.maputilslib.ugradeXY5D_float.argtypes = [float32_array5,   float32_array5,     ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int]
+            
+            self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
 
-    def C_ugradeXY6D(self, map_l, nhit_l, rms_l):
+            self.maputilslib.ugradeXY5D_float(self.map,     map_l,      n0,       
+                                            n1,             n2,         n3,       
+                                            n4,             N3,         N4,       
+                                            self.merge_numXY)
+        else:
+            self.maputilslib.ugradeXY5D_int.argtypes = [int32_array5,   int32_array5,     ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int]
+            
+            self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeXY5D_int(self.map,     map_l,      n0,       
+                                            n1,             n2,         n3,       
+                                            n4,             N3,         N4,       
+                                            self.merge_numXY)
+
+    def C_ugradeXY6D(self, map_l):
         float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
         int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeXY6D.argtypes = [float32_array6, int32_array6, float32_array6,
-                                              float32_array6, int32_array6, float32_array6,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        
         n0, n1, n2, n3, n4, n5 = map_l.shape
         N4, N5 = n4 * self.merge_numXY, n5 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+        if map_l.dtype == np.float32:
+            self.maputilslib.ugradeXY6D_float.argtypes = [float32_array6, float32_array6,   ctypes.c_int,   
+                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int,         ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int]
 
-        self.maputilslib.ugradeXY6D(self.map,     self.nhit,      self.rms,
-                                    map_l,        nhit_l,         rms_l,
-                                    n0,           n1,             n2,
-                                    n3,           n4,             n5, 
-                                    N4,           N5,             self.merge_numXY)
+            self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+            print(self.map.shape, map_l.shape)
+            
+            self.maputilslib.ugradeXY6D_float(self.map,     map_l,      n0,           
+                                            n1,             n2,         n3,           
+                                            n4,             n5,         N4,           
+                                            N5,             self.merge_numXY)
 
-    def C_ugradeZ4D(self, map_l, nhit_l, rms_l):
+        else:
+            self.maputilslib.ugradeXY6D_int.argtypes = [int32_array6, int32_array6,   ctypes.c_int,   
+                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int,         ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int]
+
+            self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeXY6D_int(self.map,     map_l,      n0,           
+                                            n1,             n2,         n3,           
+                                            n4,             n5,         N4,           
+                                            N5,             self.merge_numXY)
+
+    def C_ugradeZ4D(self, map_l):
         float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
         int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeZ4D.argtypes = [float32_array4, int32_array4, float32_array4,
-                                                float32_array4, int32_array4, float32_array4,
-                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        
         n0, n1, n2, n3  = map_l.shape
         N1              = n1 * self.merge_numZ
         
-        self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, N1, n2, n3), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
+        if map_l.dtype == np.float32:
+            self.maputilslib.ugradeZ4D_float.argtypes = [float32_array4, float32_array4,    ctypes.c_int,   
+                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int]
+            
+            self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
 
-        self.maputilslib.ugradeZ4D(self.map,   self.nhit,  self.rms,
-                                   map_l,      nhit_l,     rms_l,
-                                   n0,         n1,         n2,
-                                   n3,         N1,         self.merge_numZ)
+            self.maputilslib.ugradeZ4D_float(self.map,   map_l,     n0,         
+                                            n1,         n2,         n3,         
+                                            N1,         self.merge_numZ)
+        else:
+            self.maputilslib.ugradeZ4D_int.argtypes = [int32_array4, int32_array4,    ctypes.c_int,   
+                                                    ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
+                                                    ctypes.c_int, ctypes.c_int]
 
-    def C_ugradeZ5D(self, map_l, nhit_l, rms_l):
+            self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeZ4D_int(self.map,   map_l,     n0,         
+                                            n1,         n2,         n3,         
+                                            N1,         self.merge_numZ)
+
+    def C_ugradeZ5D(self, map_l):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
         int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeZ5D.argtypes = [float32_array5, int32_array5, float32_array5,
-                                              float32_array5, int32_array5, float32_array5,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int]
+        
         n0, n1, n2, n3, n4 = map_l.shape
         N2 = n2 * self.merge_numZ
         
-        self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, n1, N2, n3, n4), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
+        if map_l.dtype == np.float32:
 
-        self.maputilslib.ugradeZ5D(self.map, self.nhit,  self.rms,
-                                   map_l,    nhit_l,     rms_l,
-                                   n0,       n1,         n2,
-                                   n3,       n4,         N2,
-                                   self.merge_numZ)
+            self.maputilslib.ugradeZ5D_float.argtypes = [float32_array5, float32_array5,    ctypes.c_int,   
+                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int]
+            self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
 
-    def C_ugradeZ6D(self, map_l, nhit_l, rms_l):
+            self.maputilslib.ugradeZ5D_float(self.map,  map_l,  n0,       
+                                            n1,         n2,     n3,       
+                                            n4,         N2,     self.merge_numZ)
+        else:
+            self.maputilslib.ugradeZ5D_int.argtypes = [int32_array5, int32_array5,    ctypes.c_int,   
+                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int]
+            self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeZ5D_int(self.map,  map_l,  n0,       
+                                            n1,         n2,     n3,       
+                                            n4,         N2,     self.merge_numZ)
+    
+    def C_ugradeZ6D(self, map_l):
         float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
         int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeZ6D.argtypes = [float32_array6, int32_array6, float32_array6,
-                                              float32_array6, int32_array6, float32_array6,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int]
+        
         n0, n1, n2, n3, n4, n5 = map_l.shape
         N3 = n3 * self.merge_numZ
         
-        self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
+        if map_l.dtype == np.float32:
 
-        self.maputilslib.ugradeZ6D(self.map,     self.nhit,      self.rms,
-                                   map_l,        nhit_l,         rms_l,
-                                   n0,           n1,             n2,
-                                   n3,           n4,             n5, 
-                                   N3,           self.merge_numZ)
-    
-    def C_ugradeXYZ4D(self, map_l, nhit_l, rms_l):
+            self.maputilslib.ugradeZ6D_float.argtypes = [float32_array6,    float32_array6,     ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int]
+
+            self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
+
+            self.maputilslib.ugradeZ6D_float(self.map,        map_l,          n0,           
+                                            n1,             n2,             n3,           
+                                            n4,             n5,             N3,           
+                                            self.merge_numZ)
+        else:
+
+            self.maputilslib.ugradeZ6D_int.argtypes = [int32_array6,    int32_array6,     ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int,       ctypes.c_int,       ctypes.c_int,   
+                                                        ctypes.c_int]
+
+            self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeZ6D_int(self.map,        map_l,          n0,           
+                                            n1,             n2,             n3,           
+                                            n4,             n5,             N3,           
+                                            self.merge_numZ)
+
+    def C_ugradeXYZ4D(self, map_l):
         float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
         int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeXYZ4D.argtypes = [float32_array4, int32_array4, float32_array4,
-                                                float32_array4, int32_array4, float32_array4,
-                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int]
         n0, n1, n2, n3 = map_l.shape
         N1, N2, N3 = n1 * self.merge_numZ, n2 * self.merge_numXY, n3 * self.merge_numXY
         
-        self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, N1, N2, N3), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
+        if map_l.dtype == np.float32:
 
-        self.maputilslib.ugradeXYZ4D(self.map, self.nhit,       self.rms,
-                                     map_l,    nhit_l,          rms_l,
-                                     n0,       n1,              n2,
-                                     n3,       N1,              N2,
-                                     N3,       self.merge_numZ,  self.merge_numXY)
+            self.maputilslib.ugradeXYZ4D_float.argtypes = [float32_array4, float32_array4,  ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int]
 
-    def C_ugradeXYZ5D(self, map_l, nhit_l, rms_l):
+            self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
+
+            self.maputilslib.ugradeXYZ4D_float(self.map,    map_l,      n0,       
+                                                n1,         n2,         n3,         
+                                                N1,         N2,         N3,         
+                                                self.merge_numZ,  self.merge_numXY)
+        else:
+            self.maputilslib.ugradeXYZ4D_int.argtypes = [int32_array4, int32_array4,  ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int]
+
+            self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeXYZ4D_int(self.map,    map_l,      n0,       
+                                                n1,         n2,         n3,         
+                                                N1,         N2,         N3,         
+                                                self.merge_numZ,  self.merge_numXY)
+
+    def C_ugradeXYZ5D(self, map_l):
         float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
         int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeXYZ5D.argtypes = [float32_array5, int32_array5, float32_array5,
-                                              float32_array5, int32_array5, float32_array5,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int]
+        
         n0, n1, n2, n3, n4 = map_l.shape
         N2, N3, N4 = n2 * self.merge_numZ, n3 * self.merge_numXY, n4 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, n1, N2, N3, N4), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
 
-        self.maputilslib.ugradeXYZ5D(self.map, self.nhit,  self.rms,
-                                     map_l,    nhit_l,     rms_l,
-                                     n0,       n1,         n2,
-                                     n3,       n4,         N2,
-                                     N3,       N4,         self.merge_numZ,
-                                     self.merge_numXY)
+        if map_l.dtype == np.float32:
 
-    def C_ugradeXYZ6D(self, map_l, nhit_l, rms_l):
+            self.maputilslib.ugradeXYZ5D_float.argtypes = [float32_array5, float32_array5,  ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int]
+            
+            self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
+
+            self.maputilslib.ugradeXYZ5D_float(self.map,    map_l,              n0,       
+                                                n1,         n2,                 n3,       
+                                                n4,         N2,                 N3,       
+                                                N4,         self.merge_numZ,    self.merge_numXY)
+        else:
+            self.maputilslib.ugradeXYZ5D_int.argtypes = [int32_array5, int32_array5,  ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                        ctypes.c_int, ctypes.c_int,     ctypes.c_int]
+            
+            self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_int)
+
+            self.maputilslib.ugradeXYZ5D_int(self.map,    map_l,              n0,       
+                                            n1,         n2,                 n3,       
+                                            n4,         N2,                 N3,       
+                                            N4,         self.merge_numZ,    self.merge_numXY)
+
+    def C_ugradeXYZ6D(self, map_l):
         float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
         int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeXYZ6D.argtypes = [float32_array6, int32_array6, float32_array6,
-                                              float32_array6, int32_array6, float32_array6,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                              ctypes.c_int,   ctypes.c_int]
+        
         n0, n1, n2, n3, n4, n5 = map_l.shape
         N3, N4, N5 = n3 * self.merge_numZ, n4 * self.merge_numXY, n5 * self.merge_numXY
         
-        self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
-        self.nhit = np.zeros((n0, n1, n2, N3, N4, N5), dtype = ctypes.c_int)
-        self.rms = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeXYZ6D(self.map,         self.nhit,      self.rms,
-                                     map_l,            nhit_l,         rms_l,
-                                     n0,               n1,             n2,
-                                     n3,               n4,             n5, 
-                                     N3,               N4,             N5,
-                                     self.merge_numZ,  self.merge_numXY)
+        if map_l.dtype == np.float32:
 
 
+            self.maputilslib.ugradeXYZ6D_float.argtypes = [float32_array6,  float32_array6, ctypes.c_int,   
+                                                            ctypes.c_int,   ctypes.c_int,   ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int]
+        
+            self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
+        
+            self.maputilslib.ugradeXYZ6D_float(self.map,        map_l,      n0,               
+                                                n1,             n2,         n3,               
+                                                n4,             n5,         N3,               
+                                                N4,             N5,         self.merge_numZ,  
+                                                self.merge_numXY)
+        else:
+
+            self.maputilslib.ugradeXYZ6D_int.argtypes = [int32_array6,  int32_array6, ctypes.c_int,   
+                                                            ctypes.c_int,   ctypes.c_int,   ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
+                                                            ctypes.c_int]
+        
+            self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_int)
+        
+            self.maputilslib.ugradeXYZ6D_int(self.map,        map_l,      n0,               
+                                                n1,             n2,         n3,               
+                                                n4,             n5,         N3,               
+                                                N4,             N5,         self.merge_numZ,  
+                                                self.merge_numXY)
+
+    """
     def add(self, data1, data2):
         return data1 + data2
     
@@ -1273,7 +1455,7 @@ class Atlas:
         sum = var1 + var2 
         sum = np.sqrt(sum)
         return sum
-
+    """
 if __name__ == "__main__":
     t = time.time()
     map = Atlas()
