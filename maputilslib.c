@@ -862,7 +862,7 @@ void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h,
                                     idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
                                     map_h[idx_h]    = map_l[idx_l];       
                                     nhit_h[idx_h]   = nhit_l[idx_l];       
-                                    rms_h[idx_h]    = rms_l[idx_l];    
+                                    rms_h[idx_h]    = rms_l[idx_l]; 
                                 }
                             }
                         }      

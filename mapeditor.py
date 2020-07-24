@@ -305,8 +305,19 @@ class Atlas:
                 rms =  dfile["rms"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
         return map, nhit, rms
         
-    def writeMap(self, jackmode = None, write_the_rest = False):
-        if jackmode != None:
+    def writeMap(self, jackmode = None, write_the_rest = False, custom_data = None, custom_name = None):
+        if custom_data != None and custom_name:
+            if map_name in self.ofile and self.access == "a":
+                """
+                To overwrite existing dataset with different shape, the existing
+                dataset must first be deleted.
+                """   
+                del self.ofile[map_name]
+                self.ofile.create_dataset(custom_name, data = custom_data)
+            else:
+                self.ofile.create_dataset(custom_name, data = custom_data)
+
+        elif jackmode != None:
             map_name    = "jackknives/map_" + jackmode
             nhit_name   = "jackknives/nhit_" + jackmode
             rms_name    = "jackknives/rms_" + jackmode
@@ -370,9 +381,9 @@ class Atlas:
                                 self.ofile.create_dataset("jackknives/" + name, 
                                                             data = self.dfile1["jackknives/" + name])   
             else:   
-                if self.tool == "dgradeXY":
+                if self.tool == "dgradeXY" or self.tool == "ugradeXY":
                     self.merge_numZ = 1
-                elif self.tool == "dgradeZ":
+                elif self.tool == "dgradeZ" or self.tool == "ugradeZ":
                     self.merge_numXY = 1
                 
                 condition1 = "x" in self.ofile and "y" in self.ofile 
@@ -381,18 +392,36 @@ class Atlas:
                 condition4 = "freq" in self.ofile
                 condition  = condition1 and condition2 and condition3 and condition4
 
-                if not condition:
+                if not condition and "dgrade" in self.tool:
                     x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
                     x      = x1.reshape(int(len(x1) / self.merge_numXY), self.merge_numXY) 
                     y      = y1.reshape(int(len(y1) / self.merge_numXY), self.merge_numXY)
                     x      = np.mean(x, axis = 1)
                     y      = np.mean(y, axis = 1)
-                    
                     nside  = np.array(self.dfile1["nside"]) / self.merge_numXY                
                     freq   = self.dfile1["freq"][:]
                     freq   = freq.reshape(freq.shape[0], int(freq.shape[1] / self.merge_numZ), self.merge_numZ)
                     freq   = np.mean(freq, axis = 2)
 
+                    self.ofile.create_dataset("x",      data = x)
+                    self.ofile.create_dataset("y",      data = y)
+                    self.ofile.create_dataset("n_x",    data = len(x))
+                    self.ofile.create_dataset("n_y",    data = len(y))
+                    self.ofile.create_dataset("nside",  data = nside)
+                    self.ofile.create_dataset("freq",   data = freq)
+
+                elif not condition and "ugrade" in self.tool:
+                    x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
+                    x      = np.linspace(np.min(x1), np.max(x1), len(x1) * self.merge_numXY) 
+                    y      = np.linspace(np.min(y1), np.max(y1), len(y1) * self.merge_numXY)
+                    nside  = np.array(self.dfile1["nside"]) / self.merge_numXY                
+                    freq1   = self.dfile1["freq"][:]
+                    freq    = np.zeros((freq1.shape[0], freq1.shape[1] * self.merge_numZ))
+                    for i in range(freq.shape[0]):
+                        freq[i, :] = np.linspace(np.min(freq1[i, :]), 
+                                                 np.max(freq1[i, :]), 
+                                                 freq1.shape[1] * self.merge_numZ)
+                
                     self.ofile.create_dataset("x",      data = x)
                     self.ofile.create_dataset("y",      data = y)
                     self.ofile.create_dataset("n_x",    data = len(x))
@@ -558,7 +587,7 @@ class Atlas:
                             
                             elif len(self.map1.shape) == 5:
                                 self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
-
+                        
                         elif self.tool == "ugradeXY":
                             if len(self.map1.shape) == 6:
                                 self.C_ugradeXY6D(self.map1, self.nhit1, self.rms1)

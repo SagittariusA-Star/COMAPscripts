@@ -251,8 +251,7 @@ print(np.allclose(B, n_h))
 A = np.arange(3 * 3 * 3 * 3 * 3 * 3)
 A = A.reshape(3, 3, 3, 3, 3, 3)
 
-numXY = 2
-numZ = 2
+numZ = 4
 n0, n1, n2, n3, n4, n5 = A.shape 
 N3 = n3 * numZ
 B = np.zeros((n0, n1, n2, N3, n4, n5))
@@ -286,7 +285,7 @@ n_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_int)
 r_l = np.arange(3 * 3 * 3 * 3 * 3 * 3)
 r_l = m_l.reshape(3, 3, 3, 3, 3, 3).astype(ctypes.c_float)
 
-numZ = int(2)
+numZ = int(4)
 numXY = int(2)
 n0, n1, n2, n3, n4, n5 = m_l.shape
 N3 = n3 * numZ
@@ -315,7 +314,7 @@ maputilslib.ugradeZ6D(m_h, n_h,  r_h,
 
 print(np.allclose(A, n_l))
 print(np.allclose(B, n_h))
-
+print("second")
 print(m_l[0, 0, 0, 0, :, :], "\n")
 print(m_l[0, 0, 0, 1, :, :], "\n")
 print(m_l[0, 0, 0, 2, :, :], "\n")
@@ -324,4 +323,7 @@ print(m_h[0, 0, 0, 1, :, :], "\n")
 print(m_h[0, 0, 0, 2, :, :], "\n")
 print(m_h[0, 0, 0, 3, :, :], "\n")
 print(m_h[0, 0, 0, 4, :, :], "\n")
-print(m_h[0, 0, 0, 5, :, :])
+print(m_h[0, 0, 0, 5, :, :], "\n")
+print(m_h[0, 0, 0, 6, :, :], "\n")
+print(m_h[0, 0, 0, 7, :, :], "\n")
+print(m_h[0, 0, 0, 8, :, :], "\n")
