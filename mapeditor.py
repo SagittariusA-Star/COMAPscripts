@@ -18,7 +18,7 @@ class Atlas:
         self.det_list     = np.arange(1,20)
         self.sb_list      = np.arange(1,5)
         self.freq_list    = np.arange(1,65)
-        self.outfile      = None
+        self.outfile      = "outfile.h5"
         self.scale       = None
         self.beam        = False
         self.full        = False
@@ -31,11 +31,7 @@ class Atlas:
         self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared library
         self.infile1      = None
         self.infile2      = None
-        self.access       = "a"
         self.input()    
-        if self.outfile == None:
-            print("To save result to outfile, please provide a valid outfile name!")
-            sys.exit() 
         if self.infile1 != None and self.infile2 != None:
             if self.jack and ("jackknives" not in self.dfile1 or "jackknives" not in self.dfile2):
                 print("One or both of the input files does not contain any jackknife information!")
@@ -50,6 +46,8 @@ class Atlas:
                 if "jackknives" in self.dfile1:
                     nhit_lst = [i for i in self.dfile1["jackknives"].keys() if "nhit_" in i]
                     self.jk =  [i.split("_")[1] for i in nhit_lst]
+        
+        self.ofile = h5.File(self.outfile, "w")        
         self.operation()
         self.dfile1.close()
         if self.infile1 != None and self.infile2 != None:
@@ -61,8 +59,8 @@ class Atlas:
             self.usage()
 
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:r:l:j:t:bw:a::F", ["sb=", "freq=", "infile1=", "help", "de=t",
-                                                                                      "out=","infile2=","deepx", "deepy", "jk=", "tool=", "beam", "scale=","access=", "full"])
+            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:j:t:bF", ["sb=", "freq=", "infile1=", "help", "det=",
+                                                                                      "out=","infile2=", "jk=", "tool=", "beam", "full"])
         except getopt.GetoptError:
             self.usage()
 
@@ -166,11 +164,8 @@ class Atlas:
                 self.beam = True
             elif opt in ("-F", "--full"):
                 self.full = True
-            elif opt in ("-a", "--overwrite"):
-                self.access = arg
             elif opt in ("-o", "--out"):
                 self.outfile = arg
-                self.ofile = h5.File(self.outfile, self.access)
             elif opt in ("-d", "--det"):
                 self.det_list = eval(arg)
                 if type(self.det_list) != list and type(self.det_list) != np.ndarray:
@@ -219,59 +214,49 @@ class Atlas:
                     sys.exit()
             elif opt in ("-h", "--help"):
                 self.usage()
-            elif opt in ("-z", "--sim"):
-                self.sim_numb = int(arg)
-            elif opt in ("-w", "--scale"):
-                self.scale = eval(arg)
-            elif opt in ("-m", "--mask"):
-                self.rms_lim = eval(arg)
-            elif opt in ("-r", "--deepx"):
-                self.deepx = True
-                self.y_index = int(arg)-1
-            elif opt in ("-l", "--deepy"):
-                self.deepy = True
-                self.x_index = int(arg)-1
             else:
                 self.usage()
 
     def usage(self):
         prefix = ""
         preferredWidth = 150
-        wrapper = textwrap.TextWrapper(initial_indent=prefix, width=preferredWidth,subsequent_indent=' '*len(prefix))
-        m1 = "(Side band as a list, ie. [1,2,4]. Default all)"
-        m2 = "(Frequency, given as list, ie. [1,6,26]. Default all) "
-        m3 = "(Type of map_mode. Choices are map, rms, map/rms, sim, rms_sim, nhit, and var. Default map) "
-        m4 = "(Filename)"
-        m5 = "(color_limits of colorbar) as nested list. First map_mode --> first list in main list. Default none)"
-        m6 = "(Which detector as a list, ie. [4,11,18]. Default all)"
-        m7 = "(Outfile name, default 'outfile')"
-        m8 = "(x range [xmin,xmax])"
-        m9 = "(y range [ymin,ymax])"
-        m10 = "(Include to split the map as the focal plane)"
-        m11 = "(If the field non-stationary)"
-        m12 = "(Which simulation, default first element (0))"
-        m13 = "(Scale the data by a factor w, default 1)"
-        m14 = "(rms limit. Include a mask that removes pixels with the given rms limit.)"
-        m15 = "(x vs z for a given y index)"
-        m16 = "(y vs z for a given x index)"
-
+        wrapper = textwrap.TextWrapper(initial_indent=prefix, width=preferredWidth,subsequent_indent=' ' * 30)
+        m1 = "[(Side band as a list of upper and lower bound, ie. [1,4]. Default all sidebands]"
+        m2 = "[(Frequency, given as list of upper and lower bounds, ie. [1,26]. Default all frequencies] "
+        m3 = "[(Tool to use in operation performed on map file(s).]" 
+        m3  += "Choices: For one input file coadd and subtract;" 
+        m3  += "for two input files dgradeXY,i, dgradeZ,j and dgradeXYZ,i,j" 
+        m3  += "where i and j are the number of px and channels to merge"
+        m3  += "ugrade currently not fully supported)]."
+        m4 = "[First input file (must always be given)]"
+        m5 = "[Second input file (must be given if coadding or subtracting two maps)]"
+        m6 = "[(Which detector as a list, ie. [4,11,18]. Default all]"
+        m7 = "[Outfile name, default 'outfile.h5']"
+        m8 = "[Beam argument, if given operation is only performed on '_beam' datasets.]"
+        m8 += "[Default are beam, full and jackknives ]"
+        m9 = "[If given performes operation only on full datasets (ie map, nhit and rms."
+        m9 += "Default are beam, full and jackknives]"
+        m10 = "[Jackknife mode to perform operation on. Choices are dayn, half, odde and sdlb." 
+        m10 += "Default are beam, full and jackknives]"
+        m11 = "[Help which diplays this text]"
+        
         print("\nThis is the usage function\n")
+        print("Before running the program one must comile the comanion C library:")
+        print("$~ [compiler] -shared -O3 -fPIC maputilslib.c -o maputilslib.so.1\n")
+        print("Run example:")
+        print("$~ python mapeditor.py -i inmap1.h5 -I inmap2.h5 -t coadd\n")
         print("Flags:")
-        print("-f ----> optional --filename " + wrapper.fill(m4))
-        print("-o ----> optional --out "      + wrapper.fill(m7))
-        print("-p ----> optional --map_modes "    + wrapper.fill(m3))
-        print("-d ----> optional --det "      + wrapper.fill(m6))
-        print("-s ----> optional --sb "       + wrapper.fill(m1))
-        print("-n ----> optional --nu "       + wrapper.fill(m2))
-        print("-c ----> optional --colorlim " + wrapper.fill(m5))
-        print("-w ----> optional --scale "    + wrapper.fill(m13))
-        print("-m ----> optional --mask "     + wrapper.fill(m14))
-        print("-x ----> optional --xlim "     + wrapper.fill(m8))
-        print("-y ----> optional --ylim "     + wrapper.fill(m9))
-        print("-j ----> optional --jupiter "  + wrapper.fill(m11))
-        print("-z ----> optional --sim "      + wrapper.fill(m12))
-        print("-r ----> optional --deepx"     + wrapper.fill(m15))
-        print("-l ----> optional --deepy"     + wrapper.fill(m16))
+        print("-i ----> optional --infile1..." + wrapper.fill(m4))
+        print("-I ----> optional --infile2..." + wrapper.fill(m5))
+        print("-o ----> optional --out......." + wrapper.fill(m7))
+        print("-d ----> optional --det......." + wrapper.fill(m6))
+        print("-s ----> optional --sb........" + wrapper.fill(m1))
+        print("-f ----> optional --freq......" + wrapper.fill(m2))
+        print("-t ----> optional --tool......" + wrapper.fill(m3))
+        print("-b ----> optional --beam......" + wrapper.fill(m8))
+        print("-F ----> optional --full......" + wrapper.fill(m9))
+        print("-j ----> optional --jk........" + wrapper.fill(m10))
+        print("-h ----> optional --help......" + wrapper.fill(m11))
         sys.exit()
 
     def readMap(self, first_file = True, jackmode = None):
@@ -306,38 +291,27 @@ class Atlas:
         return map, nhit, rms
         
     def writeMap(self, jackmode = None, write_the_rest = False, custom_data = None, custom_name = None):
-        if custom_data != None and custom_name:
-            if map_name in self.ofile and self.access == "a":
-                """
-                To overwrite existing dataset with different shape, the existing
-                dataset must first be deleted.
-                """   
-                del self.ofile[map_name]
-                self.ofile.create_dataset(custom_name, data = custom_data)
-            else:
-                self.ofile.create_dataset(custom_name, data = custom_data)
-
-        elif jackmode != None:
+        if (jackmode != None )and not write_the_rest:
             map_name    = "jackknives/map_" + jackmode
             nhit_name   = "jackknives/nhit_" + jackmode
             rms_name    = "jackknives/rms_" + jackmode
-            if map_name in self.ofile and self.access == "a":
-                """
+            """
                 To overwrite existing dataset with different shape, the existing
                 dataset must first be deleted.
-                """   
+            """   
+            """if map_name in self.ofile and self.access == "a":
                 del self.ofile[map_name]
                 del self.ofile[nhit_name]
                 del self.ofile[rms_name]
                 self.ofile.create_dataset(map_name, data = self.map)
                 self.ofile.create_dataset(nhit_name, data = self.nhit)
                 self.ofile.create_dataset(rms_name, data = self.rms)
-            else:
-                self.ofile.create_dataset(map_name, data = self.map)
-                self.ofile.create_dataset(nhit_name, data = self.nhit)
-                self.ofile.create_dataset(rms_name, data = self.rms)
+            else:"""
+            self.ofile.create_dataset(map_name, data = self.map)
+            self.ofile.create_dataset(nhit_name, data = self.nhit)
+            self.ofile.create_dataset(rms_name, data = self.rms)
 
-        elif self.beam or self.full:
+        elif (self.beam or self.full) and not write_the_rest:
             if self.beam:
                 map_name    = "map_beam"
                 nhit_name   = "nhit_beam"
@@ -346,12 +320,13 @@ class Atlas:
                 map_name    = "map"
                 nhit_name   = "nhit"
                 rms_name    = "rms"
-                
-            if map_name in self.ofile and self.access == "a":
                 """
                 To overwrite existing dataset with different shape, the existing
                 dataset must first be deleted.
                 """
+            """  
+            if map_name in self.ofile and self.access == "a":
+               
                 del self.ofile[map_name]
                 del self.ofile[nhit_name]
                 del self.ofile[rms_name]
@@ -360,9 +335,10 @@ class Atlas:
                 self.ofile.create_dataset(rms_name, data = self.rms)
 
             else:
-                self.ofile.create_dataset(map_name, data = self.map)
-                self.ofile.create_dataset(nhit_name, data = self.nhit)
-                self.ofile.create_dataset(rms_name, data = self.rms)
+            """
+            self.ofile.create_dataset(map_name, data = self.map)
+            self.ofile.create_dataset(nhit_name, data = self.nhit)
+            self.ofile.create_dataset(rms_name, data = self.rms)
         
         if write_the_rest:
             if self.infile1 != None and self.infile2 != None:
@@ -412,15 +388,25 @@ class Atlas:
 
                 elif not condition and "ugrade" in self.tool:
                     x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
-                    x      = np.linspace(np.min(x1), np.max(x1), len(x1) * self.merge_numXY) 
-                    y      = np.linspace(np.min(y1), np.max(y1), len(y1) * self.merge_numXY)
+                    dx, dy = x[1] - x[0], y[1] - y[0]
+                    first_center_x = x[0] - dx / 4
+                    first_center_y = y[0] - dy / 4
+
+                    x      = np.zeros(len(x1) * self.merge_numXY) 
+                    y      = np.zeros(len(y1) * self.merge_numXY)
+                    for i in range(len(x1)):
+                        x[i] = first_center_x + i * dx / 2
+                        y[i] = first_center_y + i * dy / 2
+
                     nside  = np.array(self.dfile1["nside"]) / self.merge_numXY                
+                    
                     freq1   = self.dfile1["freq"][:]
                     freq    = np.zeros((freq1.shape[0], freq1.shape[1] * self.merge_numZ))
                     for i in range(freq.shape[0]):
-                        freq[i, :] = np.linspace(np.min(freq1[i, :]), 
-                                                 np.max(freq1[i, :]), 
-                                                 freq1.shape[1] * self.merge_numZ)
+                        df = freq[1,:] - freq[0,:]
+                        first_center_freq = freq[i, 0] - df / 4
+                        for j in range(freq.shape[1]):
+                            freq[i, j] = first_center_freq + j * df / 2 
                 
                     self.ofile.create_dataset("x",      data = x)
                     self.ofile.create_dataset("y",      data = y)
@@ -1477,31 +1463,6 @@ class Atlas:
                                      n4,              n5,              N3,               
                                      N4,              N5,              self.merge_numZ,  
                                      self.merge_numXY)
-
-
-    def add(self, data1, data2):
-        return data1 + data2
-    
-    def subtract(self, data1, data2):
-        return data1 - data2
-
-    def multiply(self, data, factor):
-        return factor * data
-
-    def coadd(self, map1, map2, inv_rms1, inv_rms2):
-        inv_var1 = np.square(inv_rms1)
-        inv_var2 = np.square(inv_rms2)
-        var_inv = inv_var1 + inv_var2
-        coadded = map1 * inv_var1 + map2 * inv_var2
-        coadded /= var_inv
-        return coadded
-
-    def add_rms(self, rms1, rms2):
-        var1 = np.square(rms1)
-        var2 = np.square(rms2)
-        sum = var1 + var2 
-        sum = np.sqrt(sum)
-        return sum
 
 if __name__ == "__main__":
     t = time.time()
