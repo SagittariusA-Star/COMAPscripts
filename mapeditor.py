@@ -8,35 +8,41 @@ import ctypes
 
 class Atlas:
     def __init__(self):
-        self.jk_choices   = ["odde", "dayn", "half", "sdlb"]
-        self.jk           = None
-        self.jack         = False
+        """
+        Initiating Atlas class and setting class attributes and default command line arguments
+        """
+        self.jk_choices   = ["odde", "dayn", "half", "sdlb"]    # Possible choices of jackknife modes.
+        self.jk           = None                                # If no jackknife argument is given self.jk will be None.
+        self.jack         = False                               # If ture operations are performed on jackknives, changes to 
+                                                                #true if jackknife command line input is given.
+
         self.tool_choices   = ["coadd", "subtract", "dgradeXY", "dgradeZ", "dgradeXYZ",
-                                                    "ugradeXY", "ugradeZ", "ugradeXYZ"]
-        self.tool           = "coadd"
-        self.freq         = "all"
-        self.det_list     = np.arange(1,20)
-        self.sb_list      = np.arange(1,5)
-        self.freq_list    = np.arange(1,65)
-        self.outfile      = "outfile.h5"
-        self.scale       = None
-        self.beam        = False
-        self.full        = False
-        self.everything  = False 
-        self.patch1       = ''
-        self.patch2       = ''
-        self.rms_lim      = 200000.
-        self.deepx        = False
-        self.deepy        = False
-        self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared library
-        self.infile1      = None
-        self.infile2      = None
-        self.input()    
+                                                    "ugradeXY", "ugradeZ", "ugradeXYZ"]     # Tool choices.
+        self.tool           = "coadd"               # Default tool is coadd.
+        self.det_list     = np.arange(1,20)         # List of detectors to use, default all.
+        self.sb_list      = np.arange(1,5)          # List of sidebands to use, default all.
+        self.freq_list    = np.arange(1,65)         # List of frequency channels per sideband, default all.
+        self.outfile      = "outfile.h5"            # Output file name.
+
+        self.beam        = False    # If true subsequent operations are only performed on _beam dataset.
+        self.full        = False    # If true subsequent operations are only performed on full dataset.
+        self.everything  = False    # If true full, beam and jackknive datasets are all processed.
+        self.patch1       = ''      # Patch name of first infile.
+        self.patch2       = ''      # Patch name of second infile.
+        self.infile1      = None    # Fist infile name.
+        self.infile2      = None    # Second infile name.
+        self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
+
+        self.input()    # Calling the input function to set variables dependent on command line input.
+
         if self.infile1 != None and self.infile2 != None:
+            """Checking whether both input files have jackknife datasets"""
             if self.jack and ("jackknives" not in self.dfile1 or "jackknives" not in self.dfile2):
                 print("One or both of the input files does not contain any jackknife information!")
                 sys.exit()
+
         if not self.full and not self.beam and not self.jack:
+            """Checking whether to process all datasets"""
             self.everything = True
             if self.infile1 != None and self.infile2 != None:
                 if "jackknives" in self.dfile1 and "jackknives" in self.dfile2:
@@ -47,24 +53,29 @@ class Atlas:
                     nhit_lst = [i for i in self.dfile1["jackknives"].keys() if "nhit_" in i]
                     self.jk =  [i.split("_")[1] for i in nhit_lst]
         
-        self.ofile = h5.File(self.outfile, "w")        
-        self.operation()
-        self.dfile1.close()
-        if self.infile1 != None and self.infile2 != None:
-            self.dfile2.close() 
-        self.ofile.close()
+        self.ofile = h5.File(self.outfile, "w")             # Opening outfile object with write access.   
+        self.operation()                                    # Calling operations to perform operation with tool given in command line.
+        self.dfile1.close()                                 # Closing first input file.
+        if self.infile1 != None and self.infile2 != None:   
+            self.dfile2.close()                             # Closing second input file if provided.
+        self.ofile.close()                                  # Closing output file.
 
     def input(self):
+        """
+        Function processing the commapnd line input using getopt.
+        """
+
         if len(sys.argv) == 1:
             self.usage()
 
         try:
             opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:j:t:bF", ["sb=", "freq=", "infile1=", "help", "det=",
-                                                                                      "out=","infile2=", "jk=", "tool=", "beam", "full"])
+                                                                            "out=","infile2=", "jk=", "tool=", "beam", "full"])
         except getopt.GetoptError:
             self.usage()
 
         for opt, arg in opts:
+            
             if opt in ("-j", "--jk"):
                 self.jack = True
                 self.jk = arg.split(",")
@@ -73,7 +84,9 @@ class Atlas:
                     if jk not in self.jk_choices:
                         print("Make sure you have chosen the correct jk choices")                                                                                                   
                         sys.exit() 
+            
             elif opt in ("-t", "--tool"):
+                """Processing input tool"""
                 conditionXY   = "dgradeXY" in arg.split(",") or "ugradeXY" in arg.split(",")
                 conditionZ    = "dgradeZ" in arg.split(",") or "ugradeZ" in arg.split(",")
                 conditionXYZ  = "dgradeXYZ" in arg.split(",") or "ugradeXYZ" in arg.split(",")
@@ -82,6 +95,7 @@ class Atlas:
                     if self.infile1 != None and self.infile2 == None:
                         print("To perform a coadd or subtraction two input files must be given!")
                         sys.exit()
+                
                 elif conditionXY and len(arg.split(",")) == 2:
                     if self.infile1 != None and self.infile2 != None:
                         print("Tool ugradeXY and dgradeXY are only supported for single input file!")
@@ -97,6 +111,7 @@ class Atlas:
                         """
                         print(textwrap.dedent(message))
                         sys.exit()
+                
                 elif conditionXY and len(arg.split(",")) != 2:
                     message = """\
                     To use ugradeXY or dgradeXY tool please provide a number of pixels to co-merge along each 
@@ -119,6 +134,7 @@ class Atlas:
                         """
                         print(textwrap.dedent(message))
                         sys.exit()
+                
                 elif conditionZ and len(arg.split(",")) != 2:
                     message = """\
                     To use ugradeZ or dgradeZ tool please provide a number of frequency channels to co-merge along 
@@ -147,6 +163,7 @@ class Atlas:
                         """
                         print(textwrap.dedent(message))
                         sys.exit()
+                
                 elif conditionXYZ and len(arg.split(",")) != 3:
                     message = """
                     To use ugradeXYZ or dgradeXYZ tool please provide a number of pixels 
@@ -157,16 +174,25 @@ class Atlas:
                     sys.exit()
                 else:
                     self.tool = arg
+                
                 if self.tool not in self.tool_choices:
                     print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
+            
             elif opt in ("-b", "--beam"):
+                """If beam is chosen, subsequent operations are only performed on _beam datasets"""
                 self.beam = True
+            
             elif opt in ("-F", "--full"):
+                """If full is chosen, subsequent operations are only done on the full datasets"""
                 self.full = True
+            
             elif opt in ("-o", "--out"):
+                """Set custom output file name"""
                 self.outfile = arg
+            
             elif opt in ("-d", "--det"):
+                """Set custom list of detector feeds to use"""
                 self.det_list = eval(arg)
                 if type(self.det_list) != list and type(self.det_list) != np.ndarray:
                     print("Detectors my be inserted as a list or array, ie. -d [1,2,5,7]")
@@ -176,7 +202,9 @@ class Atlas:
                         print("Use 1-base, not 0-base please")
                         sys.exit()
                 self.det_list = np.array(self.det_list, dtype = int)
+            
             elif opt in ("-s", "--sb"):
+                """Set custom upper/lower bound of sidebands to use"""
                 self.sb_list = eval(arg)
                 if type(self.sb_list) != list and type(self.sb_list) != np.ndarray:
                     print("Side bands my be inserted as a list or array, ie. -d [1,2,4]")
@@ -186,7 +214,9 @@ class Atlas:
                         print("Use 1-base, not 0-base please")
                         sys.exit()
                 self.sb_list = np.array(self.sb_list, dtype = int)
+            
             elif opt in ("-f", "--freq"):
+                """Set custom upper/lower bound of frequency channels to use"""
                 self.freq_list = eval(arg)
                 if type(self.freq_list)!= list and type(self.freq_list) != np.ndarray:
                     print("Frequencies my be inserted as a list or array, ie. -n [1,34,50]")
@@ -198,22 +228,29 @@ class Atlas:
                         print("There are only 64 frequencies pr. side band")
                         sys.exit()
                 self.freq_list = np.array(self.freq_list, dtype = int)
+            
             elif opt in ("-i", "--infile1"):
+                """Set first input file name (must always be given)"""
                 self.infile1 = arg
                 self.dfile1  = h5.File(self.infile1,'r')
                 temp = self.infile1.split('/')[-1]
                 self.patch1 = temp.split('_')[0]
+            
             elif opt in ("-I", "--infile2"):
+                """Set second infile file name (must be given if to perform coadd or subtract)"""
                 self.infile2 = arg
                 self.dfile2        = h5.File(self.infile2,'r')
                 temp = self.infile1.split('/')[-1]
                 self.patch2 = temp.split('_')[0]
+            
             elif ("-i" in opt or "--infile1" in opt) and ("-I" in opt or "--infile2" in opt):
                 if self.patch1 != self.patch2:
                     print("Can only perform operations on two maps if they belong to the same sky-patch.") 
                     sys.exit()
+            
             elif opt in ("-h", "--help"):
                 self.usage()
+            
             else:
                 self.usage()
 
@@ -260,17 +297,38 @@ class Atlas:
         sys.exit()
 
     def readMap(self, first_file = True, jackmode = None):
+        """
+        Function reading an input file and returns map, nhit and rms (for beam, full or jackknife) datasets.
+        
+        Parameters:
+        ------------------------------
+        first_infile: bool
+            If true the data is read from the first input file, else the second input file is read.
+        jackkmode: str
+            A string containing the name of the chosen jackknife name; dayn, half, odde or sdlb.
+        ------------------------------
+        Returns:
+            map: numpy.ndarray
+                Array containing the map dataset from the given input file.    
+            nhit: numpy.ndarray
+                Array containing the nhit dataset from the given input file.
+            rms: numpy.ndarray
+                Array containing the rms dataset from the given input file.
+        """
+
         if first_file:
             dfile = self.dfile1
         else:
             dfile = self.dfile2
 
+        """Extracting frequency and sideband upper and lower bounds"""
         freq_start = self.freq_list[0] - 1
         freq_end   = self.freq_list[-1] - 1
         sb_start = self.sb_list[0] - 1
         sb_end   = self.sb_list[-1] - 1
-
+        
         if jackmode != None:
+            """Reading jackknife datasets"""
             if jackmode == "dayn" or jackmode == "half":
                 map  =  dfile["jackknives/map_" + jackmode][:, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 nhit =  dfile["jackknives/nhit_" + jackmode][:, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
@@ -281,13 +339,17 @@ class Atlas:
                 rms  =  dfile["jackknives/rms_" + jackmode][:, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
         else:
             if self.beam:
+                """Reading beam dataset"""
                 map =  dfile["map_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 nhit =  dfile["nhit_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 rms =  dfile["rms_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+            
             elif self.full:
+                """Reading full dataset"""
                 map =  dfile["map"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 nhit =  dfile["nhit"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 rms =  dfile["rms"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                
         return map, nhit, rms
         
     def writeMap(self, jackmode = None, write_the_rest = False, custom_data = None, custom_name = None):
