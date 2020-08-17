@@ -340,10 +340,16 @@ class Atlas:
         else:
             if self.beam:
                 """Reading beam dataset"""
-                map =  dfile["map_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                nhit =  dfile["nhit_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                rms =  dfile["rms_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-            
+                try:
+                    map =  dfile["map_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    nhit =  dfile["nhit_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    rms =  dfile["rms_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                except KeyError:
+                    map =  dfile["map_coadd"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    nhit =  dfile["nhit_coadd"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    rms =  dfile["rms_coadd"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    
+
             elif self.full:
                 """Reading full dataset"""
                 map =  dfile["map"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
@@ -383,9 +389,15 @@ class Atlas:
         elif (self.beam or self.full) and not write_the_rest:
             if self.beam:
                 """Generating dataset names for beam datasets"""
-                map_name    = "map_beam"
-                nhit_name   = "nhit_beam"
-                rms_name    = "rms_beam"
+                if "map_beam" in self.dfile1.keys():
+                    map_name    = "map_beam"
+                    nhit_name   = "nhit_beam"
+                    rms_name    = "rms_beam"
+                elif "map_coadd" in self.dfile1.keys():
+                    map_name    = "map_coadd"
+                    nhit_name   = "nhit_coadd"
+                    rms_name    = "rms_coadd"
+
             elif self.full: 
                 """Generating dataset names for full datasets"""
                 map_name    = "map"
@@ -401,8 +413,16 @@ class Atlas:
             """Copieing and modifying other datasets to outfile"""
             if self.infile1 != None and self.infile2 != None:
                 """Things not to copy because they are already copied or will be copied at different time""" 
-                data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
-                                    "nhit_beam", "rms", "rms_beam"]
+                
+                if "map_beam" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
+                                        "nhit_beam", "rms", "rms_beam"]
+                
+                elif "map_coadd" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_coadd", "nhit", 
+                                        "nhit_coadd", "rms", "rms_coadd"]
+                
+                
                 jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
                                        "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
                                        "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
@@ -483,10 +503,16 @@ class Atlas:
                     self.ofile.create_dataset("freq",   data = freq)
 
                 """Copying over the remainder of the other datasets not yet copied"""
-        
-                data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
-                                    "nhit_beam", "rms", "rms_beam",
-                                    "x", "y", "n_x", "n_y", "nside", "freq"]
+                if "map_beam" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
+                                        "nhit_beam", "rms", "rms_beam",
+                                        "x", "y", "n_x", "n_y", "nside", "freq"]
+
+                elif "map_coadd" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_coadd", "nhit", 
+                                        "nhit_coadd", "rms", "rms_coadd",
+                                        "x", "y", "n_x", "n_y", "nside", "freq"]
+
                 jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
                                        "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
                                        "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
@@ -1236,7 +1262,7 @@ class Atlas:
                                 n0,         n1,         n2,
                                 n3,         N2,         N3,
                                 self.merge_numXY)
-
+        
     def C_dgradeXY5D(self, map_h, nhit_h, rms_h):
         """
         Function taking inn 5D datasets from one infile, and performes a co-merging of a given
@@ -1272,6 +1298,7 @@ class Atlas:
                                   n0,       n1,         n2,
                                   n3,       n4,         N3,
                                   N4,       self.merge_numXY)
+
 
     def C_dgradeXY6D(self, map_h, nhit_h, rms_h):
         """
