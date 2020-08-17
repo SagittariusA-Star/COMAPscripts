@@ -1268,7 +1268,9 @@ void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h,
                     for(k = a * num; k < (a + 1) * num; k++){
                         for(l = b * num; l < (b + 1) * num; l++){
                             idx_h           = p_h1 * i + p_h * j + N3 * k + l;
-                            data_h[idx_h]   = data_l[idx_l];             
+                            map_h[idx_h]    = map_l[idx_l];       
+                            nhit_h[idx_h]   = nhit_l[idx_l];       
+                            rms_h[idx_h]    = rms_l[idx_l];             
                         }
                     }
                 }      
@@ -1334,7 +1336,9 @@ void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h,
                         for(l = a * num; l < (a + 1) * num; l++){
                             for(m = b * num; m < (b + 1) * num; m++){
                                 idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
-                                data_h[idx_h]    = data_l[idx_l];              
+                                map_h[idx_h]    = map_l[idx_l];       
+                                nhit_h[idx_h]   = nhit_l[idx_l];       
+                                rms_h[idx_h]    = rms_l[idx_l];              
                             }
                         }
                     }      
@@ -1406,8 +1410,9 @@ void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h,
                             for(m = a * num; m < (a + 1) * num; m++){
                                 for(n = b * num; n < (b + 1) * num; n++){
                                     idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
-                                    data_h[idx_h]    = data_l[idx_l];        
-                                }
+                                    map_h[idx_h]    = map_l[idx_l];       
+                                    nhit_h[idx_h]   = nhit_l[idx_l];       
+                                    rms_h[idx_h]    = rms_l[idx_l];}
                             }
                         }      
                     }
@@ -1469,7 +1474,9 @@ void ugradeZ4D(float* map_h, int* nhit_h, float* rms_h,
                     for(j = a * num; j < (a + 1) * num; j++){    
                         idx_l = p_l1 * i + p_l * a + n3 * k + l;
                         idx_h = p_h1 * i + p_h * j + n3 * k + l;
-                        data_h[idx_h]    = data_l[idx_l];       
+                        map_h[idx_h]    = map_l[idx_l];       
+                        nhit_h[idx_h]   = nhit_l[idx_l];       
+                        rms_h[idx_h]    = rms_l[idx_l];       
                     }
                 }
             }
@@ -1532,7 +1539,9 @@ void ugradeZ5D(float* map_h, int* nhit_h, float* rms_h,
                         for(k = a * num; k < (a + 1) * num; k++){    
                             idx_l = p_l2 * i + p_l1 * j + p_l * a + n4 * l + m;
                             idx_h = p_h2 * i + p_h1 * j + p_h * k + n4 * l + m;
-                            data_h[idx_h]    = data_l[idx_l];       
+                            map_h[idx_h]    = map_l[idx_l];       
+                            nhit_h[idx_h]   = nhit_l[idx_l];       
+                            rms_h[idx_h]    = rms_l[idx_l];       
                         }
                     }     
                 }
@@ -1599,7 +1608,9 @@ void ugradeZ6D(float* map_h, int* nhit_h, float* rms_h,
                             for(l = a * num; l < (a + 1) * num; l++){
                                 idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * a + n5 * m + n;
                                 idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + n5 * m + n;
-                                data_h[idx_h]    = data_l[idx_l];       
+                                map_h[idx_h]    = map_l[idx_l];       
+                                nhit_h[idx_h]   = nhit_l[idx_l];       
+                                rms_h[idx_h]    = rms_l[idx_l];       
                             }
                         }
                     }
@@ -1666,7 +1677,9 @@ void ugradeXYZ4D(float* map_h, int* nhit_h, float* rms_h,
                             for(l = y * numXY; l < (y + 1) * numXY; l++){
                                 idx_l = p_l1 * i + p_l * z + n3 * x + y;
                                 idx_h = p_h1 * i + p_h * j + N3 * k + l;
-                                data_h[idx_h]    = data_l[idx_l];       
+                                map_h[idx_h]    = map_l[idx_l];       
+                                nhit_h[idx_h]   = nhit_l[idx_l];       
+                                rms_h[idx_h]    = rms_l[idx_l];       
                             }
                         }
                     }
@@ -1703,7 +1716,9 @@ void ugradeXYZ5D_float(float* data_h,     float* data_l,    int n0,
                                 for(m = y * numXY; m < (y + 1) * numXY; m++){
                                     idx_l = p_l2 * i + p_l1 * j + p_l * z + n4 * x + y;
                                     idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
-                                    data_h[idx_h]    = data_l[idx_l];        
+                                    map_h[idx_h]    = map_l[idx_l];       
+                                    nhit_h[idx_h]   = nhit_l[idx_l];       
+                                    rms_h[idx_h]    = rms_l[idx_l];        
                                 }
                             }
                         }
@@ -1772,7 +1787,9 @@ void ugradeXYZ6D_float(float* data_h,     float* data_l,    int n0,
                         for(l = a * num; l < (a + 1) * num; l++){
                             for(m = b * num; m < (b + 1) * num; m++){
                                 idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
-                                data_h[idx_h]    = data_l[idx_l];              
+                                map_h[idx_h]    = map_l[idx_l];       
+                                nhit_h[idx_h]   = nhit_l[idx_l];       
+                                rms_h[idx_h]    = rms_l[idx_l];              
                             }
                         }
                     }      
@@ -1812,7 +1829,9 @@ void ugradeXY6D_int(int* data_h, int* data_l,  int n0,
                             for(m = a * num; m < (a + 1) * num; m++){
                                 for(n = b * num; n < (b + 1) * num; n++){
                                     idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
-                                    data_h[idx_h]    = data_l[idx_l];        
+                                    map_h[idx_h]    = map_l[idx_l];       
+                                    nhit_h[idx_h]   = nhit_l[idx_l];       
+                                    rms_h[idx_h]    = rms_l[idx_l];    
                                 }
                             }
                         }      
@@ -1844,8 +1863,10 @@ void ugradeZ4D_int(int* data_h,   int* data_l,    int n0,
                 for(l = 0; l < n3; l++){
                     for(j = a * num; j < (a + 1) * num; j++){    
                         idx_l = p_l1 * i + p_l * a + n3 * k + l;
-                        idx_h = p_h1 * i + p_h * j + n3 * k + l;
-                        data_h[idx_h]    = data_l[idx_l];       
+                        idx_h = p_h1 * i + p_h * j + n3 * k + l;       
+                        map_h[idx_h]    = map_l[idx_l];       
+                        nhit_h[idx_h]   = nhit_l[idx_l];       
+                        rms_h[idx_h]    = rms_l[idx_l];
                     }
                 }
             }
@@ -1877,8 +1898,9 @@ void ugradeZ5D_int(int* data_h,   int* data_l,    int n0,
                         for(k = a * num; k < (a + 1) * num; k++){    
                             idx_l = p_l2 * i + p_l1 * j + p_l * a + n4 * l + m;
                             idx_h = p_h2 * i + p_h1 * j + p_h * k + n4 * l + m;
-                            data_h[idx_h]    = data_l[idx_l];       
-                        }
+                            map_h[idx_h]    = map_l[idx_l];       
+                            nhit_h[idx_h]   = nhit_l[idx_l];       
+                            rms_h[idx_h]    = rms_l[idx_l];}
                     }     
                 }
             }
@@ -1914,7 +1936,10 @@ void ugradeZ6D_int(int* data_h,   int* data_l,    int n0,
                             for(l = a * num; l < (a + 1) * num; l++){
                                 idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * a + n5 * m + n;
                                 idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + n5 * m + n;
-                                data_h[idx_h]    = data_l[idx_l];       
+                                map_h[idx_h]    = map_l[idx_l];       
+                                nhit_h[idx_h]   = nhit_l[idx_l];       
+                                rms_h[idx_h]    = rms_l[idx_l];
+                                       
                             }
                         }
                     }
@@ -1949,7 +1974,9 @@ void ugradeXYZ4D_int(int* data_h,     int* data_l,    int n0,
                             for(l = y * numXY; l < (y + 1) * numXY; l++){
                                 idx_l = p_l1 * i + p_l * z + n3 * x + y;
                                 idx_h = p_h1 * i + p_h * j + N3 * k + l;
-                                data_h[idx_h]    = data_l[idx_l];       
+                                map_h[idx_h]    = map_l[idx_l];       
+                                nhit_h[idx_h]   = nhit_l[idx_l];       
+                                rms_h[idx_h]    = rms_l[idx_l];       
                             }
                         }
                     }
@@ -1987,7 +2014,9 @@ void ugradeXYZ5D_int(int* data_h,     int* data_l,    int n0,
                                 for(m = y * numXY; m < (y + 1) * numXY; m++){
                                     idx_l = p_l2 * i + p_l1 * j + p_l * z + n4 * x + y;
                                     idx_h = p_h2 * i + p_h1 * j + p_h * k + N4 * l + m;
-                                    data_h[idx_h]    = data_l[idx_l];        
+                                    map_h[idx_h]    = map_l[idx_l];       
+                                    nhit_h[idx_h]   = nhit_l[idx_l];       
+                                    rms_h[idx_h]    = rms_l[idx_l];        
                                 }
                             }
                         }
@@ -2061,7 +2090,9 @@ void ugradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
                                     for(n = y * numXY; n < (y + 1) * numXY; n++){
                                         idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * z + n5 * x + y;
                                         idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
-                                        data_h[idx_h]    = data_l[idx_l];       
+                                        map_h[idx_h]    = map_l[idx_l];       
+                                        nhit_h[idx_h]   = nhit_l[idx_l];       
+                                        rms_h[idx_h]    = rms_l[idx_l];       
                                     }
                                 }
                             }
