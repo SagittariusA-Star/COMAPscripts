@@ -341,7 +341,6 @@ class Atlas:
             if self.beam:
                 """Reading beam dataset"""
                 try:
-    
                     map =  dfile["map_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                     nhit =  dfile["nhit_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                     rms =  dfile["rms_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
