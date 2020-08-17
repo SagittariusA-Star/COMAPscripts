@@ -656,138 +656,70 @@ class Atlas:
                         if self.tool == "dgradeXY":
                             if len(self.map1.shape) == 6:
                                 self.C_dgradeXY6D(self.map1, self.nhit1, self.rms1)
-                                self.writeMap(jack)
 
                             elif len(self.map1.shape) == 5:
                                 self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
-                                self.writeMap(jack)
 
                         elif self.tool == "dgradeZ":
                             if len(self.map1.shape) == 6:
                                 self.C_dgradeZ6D(self.map1, self.nhit1, self.rms1)
-                                self.writeMap(jack)
                             
                             elif len(self.map1.shape) == 5:
                                 self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
-                                self.writeMap(jack)
 
                         elif self.tool == "dgradeXYZ":
                             if len(self.map1.shape) == 6:
                                 self.C_dgradeXYZ6D(self.map1, self.nhit1, self.rms1)
-                                self.writeMap(jack)
                             
                             elif len(self.map1.shape) == 5:
                                 self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
-                                self.writeMap(jack)
                         
                         elif self.tool == "ugradeXY":
                             if len(self.map1.shape) == 6:
-                                self.C_ugradeXY6D_float(self.map1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
+                                self.C_ugradeXY6D(self.map1, self.nhit1, self.rms1)
 
-                                self.C_ugradeXY6D_int(self.nhit1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                                self.C_dgradeXY6D_float(self.rms1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-                            
                             elif len(self.map1.shape) == 5:
-                                self.C_ugradeXY5D_float(self.map1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
+                                self.C_ugradeXY5D(self.map1, self.nhit1, self.rms1)
 
-                                self.C_ugradeXY5D_int(self.nhit1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                                self.C_dgradeXY5D_float(self.rms1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-                            
                         elif self.tool == "ugradeZ":
                             if len(self.map1.shape) == 6:
-                                self.C_ugradeZ6D_float(self.map1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
+                                self.C_ugradeZ6D(self.map1, self.nhit1, self.rms1)
 
-                                self.C_ugradeZ6D_int(self.nhit1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                                self.C_ugradeZ6D_float(self.rms1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-                            
                             elif len(self.map1.shape) == 5:
-                                self.C_ugradeZ5D_float(self.map1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
-
-                                self.C_ugradeZ5D_int(self.nhit1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                                self.C_ugradeZ5D_float(self.rms1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-
+                                self.C_ugradeZ5D(self.map1, self.nhit1, self.rms1)
+                                
                         elif self.tool == "ugradeXYZ":
                             if len(self.map1.shape) == 6:
-                                self.C_ugradeXYZ6D_float(self.map1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
-                                
-                                self.C_ugradeXYZ6D_int(self.nhit1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-                                
-                                self.C_ugradeXYZ6D_float(self.rms1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
+                                self.C_ugradeXYZ6D(self.map1, self.nhit1, self.rms1)
                             
                             elif len(self.map1.shape) == 5:
-                                self.C_ugradeXYZ5D_float(self.map1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
-                                
-                                self.C_ugradeXYZ5D_int(self.nhit1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-                                
-                                self.C_ugradeXYZ5D_float(self.rms1)
-                                self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
+                                self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
+                            
+                        self.writeMap(jack)
 
                 self.full = True
                 self.map1, self.nhit1, self.rms1 = self.readMap(True)
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY5D(self.map1, self.nhit1, self.rms1)
-                    self.writeMap()
                 
                 elif self.tool == "dgradeZ":
                     self.C_dgradeZ5D(self.map1, self.nhit1, self.rms1)
-                    self.writeMap()
                 
                 elif self.tool == "dgradeXYZ":
                     self.C_dgradeXYZ5D(self.map1, self.nhit1, self.rms1)
-                    self.writeMap()
                 
                 elif self.tool == "ugradeXY":
-                    self.C_ugradeXY5D_float(self.map1)
-                    self.writeMap(custom_data = self.map, custom_name = "map_")
-
-                    self.C_ugradeXY5D_int(self.nhit1)
-                    self.writeMap(custom_data = self.map, custom_name = "nhit_")
-
-                    self.C_ugradeXY5D_float(self.rms1)
-                    self.writeMap(custom_data = self.map, custom_name = "rms_")
+                    self.C_ugradeXY5D(self.map1, self.nhit1, self.rms1)
                 
                 elif self.tool == "ugradeZ":
-                    self.C_ugradeZ5D_float(self.map1)
-                    self.writeMap(custom_data = self.map, custom_name = "map_")
-                    
-                    self.C_ugradeZ5D_int(self.nhit1)
-                    self.writeMap(custom_data = self.map, custom_name = "nhit_")
-                    
-                    self.C_ugradeZ5D_float(self.rms1)
-                    self.writeMap(custom_data = self.map, custom_name = "rms_")
+                    self.C_ugradeZ5D(self.map1, self.nhit1, self.rms1)
                 
                 elif self.tool == "ugradeXYZ":
-                    self.C_ugradeXYZ5D_float(self.map1)
-                    self.writeMap(custom_data = self.map, custom_name = "map_")
+                    self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
 
-                    self.C_ugradeXYZ5D_int(self.nhit1)
-                    self.writeMap(custom_data = self.map, custom_name = "nhit_")
+                self.writeMap()
 
-                    self.C_ugradeXYZ5D_float(self.rms1)
-                    self.writeMap(custom_data = self.map, custom_name = "rms_")
-                
                 
                 self.full = False
                 self.beam = True
@@ -795,48 +727,25 @@ class Atlas:
                 
                 if self.tool == "dgradeXY":
                     self.C_dgradeXY4D(self.map1, self.nhit1, self.rms1)
-                    self.writeMap()
 
                 elif self.tool == "dgradeZ":
                     self.C_dgradeZ4D(self.map1, self.nhit1, self.rms1)
-                    self.writeMap()
 
                 elif self.tool == "dgradeXYZ":
                     self.C_dgradeXYZ4D(self.map1, self.nhit1, self.rms1)
-                    self.writeMap()
 
                 elif self.tool == "ugradeXY":
-                    self.C_ugradeXY4D_float(self.map1)
-                    self.writeMap(custom_data = self.map, custom_name = "map_")
-                    
-                    self.C_ugradeXY4D_int(self.nhit1)
-                    self.writeMap(custom_data = self.map, custom_name = "nhit_")
-                    
-                    self.C_ugradeXY4D_float(self.rms1)
-                    self.writeMap(custom_data = self.map, custom_name = "rms_")
-
+                    self.C_ugradeXY4D(self.map1, self.nhit1, self.rms1)
+                
                 elif self.tool == "ugradeZ":
-                    self.C_ugradeZ4D_float(self.map1)
-                    self.writeMap(custom_data = self.map, custom_name = "map_")
-
-                    self.C_ugradeZ4D_int(self.nhit1)
-                    self.writeMap(custom_data = self.map, custom_name = "nhit_")
-
-                    self.C_ugradeZ4D_float(self.rms1)
-                    self.writeMap(custom_data = self.map, custom_name = "rms_")
+                    self.C_ugradeZ4D(self.map1, self.nhit1, self.rms1)
 
                 elif self.tool == "ugradeXYZ":
-                    self.C_ugradeXYZ4D_float(self.map1)
-                    self.writeMap(custom_data = self.map, custom_name = "map_")
-
-                    self.C_ugradeXYZ4D_int(self.nhit1)
-                    self.writeMap(custom_data = self.map, custom_name = "nhit_")
-
-                    self.C_ugradeXYZ4D_float(self.rms1)
-                    self.writeMap(custom_data = self.map, custom_name = "rms_")
+                    self.C_ugradeXYZ4D(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = False
+
             if self.jack:
                 for jack in self.jk:
                     self.map1, self.nhit1, self.rms1 = self.readMap(True, jack)
@@ -863,67 +772,25 @@ class Atlas:
 
                     elif self.tool == "ugradeXY":
                         if len(self.map1.shape) == 6:
-                            self.C_ugradeXY6D_float(self.map1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
+                            self.C_ugradeXY6D(self.map1, self.nhit1, self.rms1)
 
-                            self.C_ugradeXY6D_int(self.nhit1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                            self.C_dgradeXY6D_float(self.rms1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-                        
                         elif len(self.map1.shape) == 5:
-                            self.C_ugradeXY5D_float(self.map1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
+                            self.C_ugradeXY5D(self.map1, self.nhit1, self.rms1)
 
-                            self.C_ugradeXY5D_int(self.nhit1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                            self.C_dgradeXY5D_float(self.rms1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-                        
                     elif self.tool == "ugradeZ":
                         if len(self.map1.shape) == 6:
-                            self.C_ugradeZ6D_float(self.map1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
+                            self.C_ugradeZ6D(self.map1, self.nhit1, self.rms1)
 
-                            self.C_ugradeZ6D_int(self.nhit1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                            self.C_ugradeZ6D_float(self.rms1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-                        
                         elif len(self.map1.shape) == 5:
-                            self.C_ugradeZ5D_float(self.map1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
-
-                            self.C_ugradeZ5D_int(self.nhit1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-
-                            self.C_ugradeZ5D_float(self.rms1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-
+                            self.C_ugradeZ5D(self.map1, self.nhit1, self.rms1)
+                            
                     elif self.tool == "ugradeXYZ":
                         if len(self.map1.shape) == 6:
-                            self.C_ugradeXYZ6D_float(self.map1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
-                            
-                            self.C_ugradeXYZ6D_int(self.nhit1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-                            
-                            self.C_ugradeXYZ6D_float(self.rms1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
+                            self.C_ugradeXYZ6D(self.map1, self.nhit1, self.rms1)
                         
                         elif len(self.map1.shape) == 5:
-                            self.C_ugradeXYZ5D_float(self.map1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/map_" + jack)
+                            self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
                             
-                            self.C_ugradeXYZ5D_int(self.nhit1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/nhit_" + jack)
-                            
-                            self.C_ugradeXYZ5D_float(self.rms1)
-                            self.writeMap(custom_data = self.map, custom_name = "jackknives/rms_" + jack)
-
                     self.writeMap(jack)
 
             if self.full:
@@ -1103,6 +970,8 @@ class Atlas:
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
 
+
+
     def C_subtract4D(self, map1, nhit1, rms1,
                            map2, nhit2, rms2):
         """
@@ -1227,6 +1096,8 @@ class Atlas:
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
 
+
+
     def C_dgradeXY4D(self, map_h, nhit_h, rms_h):
         """
         Function taking inn 4D datasets from one infile, and performes a co-merging of a given
@@ -1298,7 +1169,6 @@ class Atlas:
                                   n0,       n1,         n2,
                                   n3,       n4,         N3,
                                   N4,       self.merge_numXY)
-
 
     def C_dgradeXY6D(self, map_h, nhit_h, rms_h):
         """
@@ -1562,6 +1432,8 @@ class Atlas:
                                   n3,               n4,             n5, 
                                   N3,               N4,             N5,
                                   self.merge_numZ,  self.merge_numXY)
+
+
 
     def C_ugradeXY4D(self, map_l, nhit_l, rms_l):
         """
