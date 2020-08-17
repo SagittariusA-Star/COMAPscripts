@@ -8,39 +8,41 @@ import ctypes
 
 class Atlas:
     def __init__(self):
-        self.jk_choices   = ["odde", "dayn", "half", "sdlb"]
-        self.jk           = None
-        self.jack         = False
+        """
+        Initiating Atlas class and setting class attributes and default command line arguments
+        """
+        self.jk_choices   = ["odde", "dayn", "half", "sdlb"]    # Possible choices of jackknife modes.
+        self.jk           = None                                # If no jackknife argument is given self.jk will be None.
+        self.jack         = False                               # If ture operations are performed on jackknives, changes to 
+                                                                #true if jackknife command line input is given.
+
         self.tool_choices   = ["coadd", "subtract", "dgradeXY", "dgradeZ", "dgradeXYZ",
-                                                    "ugradeXY", "ugradeZ", "ugradeXYZ"]
-        self.tool           = "coadd"
-        self.freq         = "all"
-        self.det_list     = np.arange(1,20)
-        self.sb_list      = np.arange(1,5)
-        self.freq_list    = np.arange(1,65)
-        self.outfile      = None
-        self.scale       = None
-        self.beam        = False
-        self.full        = False
-        self.everything  = False 
-        self.patch1       = ''
-        self.patch2       = ''
-        self.rms_lim      = 200000.
-        self.deepx        = False
-        self.deepy        = False
-        self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared library
-        self.infile1      = None
-        self.infile2      = None
-        self.access       = "a"
-        self.input()    
-        if self.outfile == None:
-            print("To save result to outfile, please provide a valid outfile name!")
-            sys.exit() 
+                                                    "ugradeXY", "ugradeZ", "ugradeXYZ"]     # Tool choices.
+        self.tool           = "coadd"               # Default tool is coadd.
+        self.det_list     = np.arange(1,20)         # List of detectors to use, default all.
+        self.sb_list      = np.arange(1,5)          # List of sidebands to use, default all.
+        self.freq_list    = np.arange(1,65)         # List of frequency channels per sideband, default all.
+        self.outfile      = "outfile.h5"            # Output file name.
+
+        self.beam        = False    # If true subsequent operations are only performed on _beam dataset.
+        self.full        = False    # If true subsequent operations are only performed on full dataset.
+        self.everything  = False    # If true full, beam and jackknive datasets are all processed.
+        self.patch1       = ''      # Patch name of first infile.
+        self.patch2       = ''      # Patch name of second infile.
+        self.infile1      = None    # Fist infile name.
+        self.infile2      = None    # Second infile name.
+        self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
+
+        self.input()    # Calling the input function to set variables dependent on command line input.
+
         if self.infile1 != None and self.infile2 != None:
+            """Checking whether both input files have jackknife datasets"""
             if self.jack and ("jackknives" not in self.dfile1 or "jackknives" not in self.dfile2):
                 print("One or both of the input files does not contain any jackknife information!")
                 sys.exit()
+
         if not self.full and not self.beam and not self.jack:
+            """Checking whether to process all datasets"""
             self.everything = True
             if self.infile1 != None and self.infile2 != None:
                 if "jackknives" in self.dfile1 and "jackknives" in self.dfile2:
@@ -50,23 +52,30 @@ class Atlas:
                 if "jackknives" in self.dfile1:
                     nhit_lst = [i for i in self.dfile1["jackknives"].keys() if "nhit_" in i]
                     self.jk =  [i.split("_")[1] for i in nhit_lst]
-        self.operation()
-        self.dfile1.close()
-        if self.infile1 != None and self.infile2 != None:
-            self.dfile2.close() 
-        self.ofile.close()
+        
+        self.ofile = h5.File(self.outfile, "w")             # Opening outfile object with write access.   
+        self.operation()                                    # Calling operations to perform operation with tool given in command line.
+        self.dfile1.close()                                 # Closing first input file.
+        if self.infile1 != None and self.infile2 != None:   
+            self.dfile2.close()                             # Closing second input file if provided.
+        self.ofile.close()                                  # Closing output file.
 
     def input(self):
+        """
+        Function processing the commapnd line input using getopt.
+        """
+
         if len(sys.argv) == 1:
             self.usage()
 
         try:
-            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:r:l:j:t:bw:a::F", ["sb=", "freq=", "infile1=", "help", "de=t",
-                                                                                      "out=","infile2=","deepx", "deepy", "jk=", "tool=", "beam", "scale=","access=", "full"])
+            opts, args = getopt.getopt(sys.argv[1:],"s:f:i:h:d:o:I:j:t:bF", ["sb=", "freq=", "infile1=", "help", "det=",
+                                                                            "out=","infile2=", "jk=", "tool=", "beam", "full"])
         except getopt.GetoptError:
             self.usage()
 
         for opt, arg in opts:
+            
             if opt in ("-j", "--jk"):
                 self.jack = True
                 self.jk = arg.split(",")
@@ -75,7 +84,9 @@ class Atlas:
                     if jk not in self.jk_choices:
                         print("Make sure you have chosen the correct jk choices")                                                                                                   
                         sys.exit() 
+            
             elif opt in ("-t", "--tool"):
+                """Processing input tool"""
                 conditionXY   = "dgradeXY" in arg.split(",") or "ugradeXY" in arg.split(",")
                 conditionZ    = "dgradeZ" in arg.split(",") or "ugradeZ" in arg.split(",")
                 conditionXYZ  = "dgradeXYZ" in arg.split(",") or "ugradeXYZ" in arg.split(",")
@@ -84,6 +95,7 @@ class Atlas:
                     if self.infile1 != None and self.infile2 == None:
                         print("To perform a coadd or subtraction two input files must be given!")
                         sys.exit()
+                
                 elif conditionXY and len(arg.split(",")) == 2:
                     if self.infile1 != None and self.infile2 != None:
                         print("Tool ugradeXY and dgradeXY are only supported for single input file!")
@@ -99,6 +111,7 @@ class Atlas:
                         """
                         print(textwrap.dedent(message))
                         sys.exit()
+                
                 elif conditionXY and len(arg.split(",")) != 2:
                     message = """\
                     To use ugradeXY or dgradeXY tool please provide a number of pixels to co-merge along each 
@@ -121,6 +134,7 @@ class Atlas:
                         """
                         print(textwrap.dedent(message))
                         sys.exit()
+                
                 elif conditionZ and len(arg.split(",")) != 2:
                     message = """\
                     To use ugradeZ or dgradeZ tool please provide a number of frequency channels to co-merge along 
@@ -149,6 +163,7 @@ class Atlas:
                         """
                         print(textwrap.dedent(message))
                         sys.exit()
+                
                 elif conditionXYZ and len(arg.split(",")) != 3:
                     message = """
                     To use ugradeXYZ or dgradeXYZ tool please provide a number of pixels 
@@ -159,19 +174,25 @@ class Atlas:
                     sys.exit()
                 else:
                     self.tool = arg
+                
                 if self.tool not in self.tool_choices:
                     print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
+            
             elif opt in ("-b", "--beam"):
+                """If beam is chosen, subsequent operations are only performed on _beam datasets"""
                 self.beam = True
+            
             elif opt in ("-F", "--full"):
+                """If full is chosen, subsequent operations are only done on the full datasets"""
                 self.full = True
-            elif opt in ("-a", "--overwrite"):
-                self.access = arg
+            
             elif opt in ("-o", "--out"):
+                """Set custom output file name"""
                 self.outfile = arg
-                self.ofile = h5.File(self.outfile, self.access)
+            
             elif opt in ("-d", "--det"):
+                """Set custom list of detector feeds to use"""
                 self.det_list = eval(arg)
                 if type(self.det_list) != list and type(self.det_list) != np.ndarray:
                     print("Detectors my be inserted as a list or array, ie. -d [1,2,5,7]")
@@ -181,7 +202,9 @@ class Atlas:
                         print("Use 1-base, not 0-base please")
                         sys.exit()
                 self.det_list = np.array(self.det_list, dtype = int)
+            
             elif opt in ("-s", "--sb"):
+                """Set custom upper/lower bound of sidebands to use"""
                 self.sb_list = eval(arg)
                 if type(self.sb_list) != list and type(self.sb_list) != np.ndarray:
                     print("Side bands my be inserted as a list or array, ie. -d [1,2,4]")
@@ -191,7 +214,9 @@ class Atlas:
                         print("Use 1-base, not 0-base please")
                         sys.exit()
                 self.sb_list = np.array(self.sb_list, dtype = int)
+            
             elif opt in ("-f", "--freq"):
+                """Set custom upper/lower bound of frequency channels to use"""
                 self.freq_list = eval(arg)
                 if type(self.freq_list)!= list and type(self.freq_list) != np.ndarray:
                     print("Frequencies my be inserted as a list or array, ie. -n [1,34,50]")
@@ -203,89 +228,107 @@ class Atlas:
                         print("There are only 64 frequencies pr. side band")
                         sys.exit()
                 self.freq_list = np.array(self.freq_list, dtype = int)
+            
             elif opt in ("-i", "--infile1"):
+                """Set first input file name (must always be given)"""
                 self.infile1 = arg
                 self.dfile1  = h5.File(self.infile1,'r')
                 temp = self.infile1.split('/')[-1]
                 self.patch1 = temp.split('_')[0]
+            
             elif opt in ("-I", "--infile2"):
+                """Set second infile file name (must be given if to perform coadd or subtract)"""
                 self.infile2 = arg
                 self.dfile2        = h5.File(self.infile2,'r')
                 temp = self.infile1.split('/')[-1]
                 self.patch2 = temp.split('_')[0]
+            
             elif ("-i" in opt or "--infile1" in opt) and ("-I" in opt or "--infile2" in opt):
                 if self.patch1 != self.patch2:
                     print("Can only perform operations on two maps if they belong to the same sky-patch.") 
                     sys.exit()
+            
             elif opt in ("-h", "--help"):
                 self.usage()
-            elif opt in ("-z", "--sim"):
-                self.sim_numb = int(arg)
-            elif opt in ("-w", "--scale"):
-                self.scale = eval(arg)
-            elif opt in ("-m", "--mask"):
-                self.rms_lim = eval(arg)
-            elif opt in ("-r", "--deepx"):
-                self.deepx = True
-                self.y_index = int(arg)-1
-            elif opt in ("-l", "--deepy"):
-                self.deepy = True
-                self.x_index = int(arg)-1
+            
             else:
                 self.usage()
 
     def usage(self):
         prefix = ""
         preferredWidth = 150
-        wrapper = textwrap.TextWrapper(initial_indent=prefix, width=preferredWidth,subsequent_indent=' '*len(prefix))
-        m1 = "(Side band as a list, ie. [1,2,4]. Default all)"
-        m2 = "(Frequency, given as list, ie. [1,6,26]. Default all) "
-        m3 = "(Type of map_mode. Choices are map, rms, map/rms, sim, rms_sim, nhit, and var. Default map) "
-        m4 = "(Filename)"
-        m5 = "(color_limits of colorbar) as nested list. First map_mode --> first list in main list. Default none)"
-        m6 = "(Which detector as a list, ie. [4,11,18]. Default all)"
-        m7 = "(Outfile name, default 'outfile')"
-        m8 = "(x range [xmin,xmax])"
-        m9 = "(y range [ymin,ymax])"
-        m10 = "(Include to split the map as the focal plane)"
-        m11 = "(If the field non-stationary)"
-        m12 = "(Which simulation, default first element (0))"
-        m13 = "(Scale the data by a factor w, default 1)"
-        m14 = "(rms limit. Include a mask that removes pixels with the given rms limit.)"
-        m15 = "(x vs z for a given y index)"
-        m16 = "(y vs z for a given x index)"
-
+        wrapper = textwrap.TextWrapper(initial_indent=prefix, width=preferredWidth,subsequent_indent=' ' * 30)
+        m1 = "[(Side band as a list of upper and lower bound, ie. [1,4]. Default all sidebands]"
+        m2 = "[(Frequency, given as list of upper and lower bounds, ie. [1,26]. Default all frequencies] "
+        m3 = "[(Tool to use in operation performed on map file(s).]" 
+        m3  += "Choices: For one input file coadd and subtract;" 
+        m3  += "for two input files dgradeXY,i, dgradeZ,j and dgradeXYZ,i,j" 
+        m3  += "where i and j are the number of px and channels to merge"
+        m3  += "ugrade currently not fully supported)]."
+        m4 = "[First input file (must always be given)]"
+        m5 = "[Second input file (must be given if coadding or subtracting two maps)]"
+        m6 = "[(Which detector as a list, ie. [4,11,18]. Default all]"
+        m7 = "[Outfile name, default 'outfile.h5']"
+        m8 = "[Beam argument, if given operation is only performed on '_beam' datasets.]"
+        m8 += "[Default are beam, full and jackknives ]"
+        m9 = "[If given performes operation only on full datasets (ie map, nhit and rms."
+        m9 += "Default are beam, full and jackknives]"
+        m10 = "[Jackknife mode to perform operation on. Choices are dayn, half, odde and sdlb." 
+        m10 += "Default are beam, full and jackknives]"
+        m11 = "[Help which diplays this text]"
+        
         print("\nThis is the usage function\n")
+        print("Before running the program one must comile the comanion C library:")
+        print("$~ [compiler] -shared -O3 -fPIC maputilslib.c -o maputilslib.so.1\n")
+        print("Run example:")
+        print("$~ python mapeditor.py -i inmap1.h5 -I inmap2.h5 -t coadd\n")
         print("Flags:")
-        print("-f ----> optional --filename " + wrapper.fill(m4))
-        print("-o ----> optional --out "      + wrapper.fill(m7))
-        print("-p ----> optional --map_modes "    + wrapper.fill(m3))
-        print("-d ----> optional --det "      + wrapper.fill(m6))
-        print("-s ----> optional --sb "       + wrapper.fill(m1))
-        print("-n ----> optional --nu "       + wrapper.fill(m2))
-        print("-c ----> optional --colorlim " + wrapper.fill(m5))
-        print("-w ----> optional --scale "    + wrapper.fill(m13))
-        print("-m ----> optional --mask "     + wrapper.fill(m14))
-        print("-x ----> optional --xlim "     + wrapper.fill(m8))
-        print("-y ----> optional --ylim "     + wrapper.fill(m9))
-        print("-j ----> optional --jupiter "  + wrapper.fill(m11))
-        print("-z ----> optional --sim "      + wrapper.fill(m12))
-        print("-r ----> optional --deepx"     + wrapper.fill(m15))
-        print("-l ----> optional --deepy"     + wrapper.fill(m16))
+        print("-i ----> optional --infile1..." + wrapper.fill(m4))
+        print("-I ----> optional --infile2..." + wrapper.fill(m5))
+        print("-o ----> optional --out......." + wrapper.fill(m7))
+        print("-d ----> optional --det......." + wrapper.fill(m6))
+        print("-s ----> optional --sb........" + wrapper.fill(m1))
+        print("-f ----> optional --freq......" + wrapper.fill(m2))
+        print("-t ----> optional --tool......" + wrapper.fill(m3))
+        print("-b ----> optional --beam......" + wrapper.fill(m8))
+        print("-F ----> optional --full......" + wrapper.fill(m9))
+        print("-j ----> optional --jk........" + wrapper.fill(m10))
+        print("-h ----> optional --help......" + wrapper.fill(m11))
         sys.exit()
 
     def readMap(self, first_file = True, jackmode = None):
+        """
+        Function reading an input file and returns map, nhit and rms (for beam, full or jackknife) datasets.
+        
+        Parameters:
+        ------------------------------
+        first_infile: bool
+            If true the data is read from the first input file, else the second input file is read.
+        jackkmode: str
+            A string containing the name of the chosen jackknife name; dayn, half, odde or sdlb.
+        ------------------------------
+        Returns:
+            map: numpy.ndarray
+                Array containing the map dataset from the given input file.    
+            nhit: numpy.ndarray
+                Array containing the nhit dataset from the given input file.
+            rms: numpy.ndarray
+                Array containing the rms dataset from the given input file.
+        """
+
         if first_file:
             dfile = self.dfile1
         else:
             dfile = self.dfile2
 
+        """Extracting frequency and sideband upper and lower bounds"""
         freq_start = self.freq_list[0] - 1
         freq_end   = self.freq_list[-1] - 1
         sb_start = self.sb_list[0] - 1
         sb_end   = self.sb_list[-1] - 1
-
+        
         if jackmode != None:
+            """Reading jackknife datasets"""
             if jackmode == "dayn" or jackmode == "half":
                 map  =  dfile["jackknives/map_" + jackmode][:, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 nhit =  dfile["jackknives/nhit_" + jackmode][:, self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
@@ -296,81 +339,94 @@ class Atlas:
                 rms  =  dfile["jackknives/rms_" + jackmode][:, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
         else:
             if self.beam:
-                map =  dfile["map_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                nhit =  dfile["nhit_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
-                rms =  dfile["rms_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                """Reading beam dataset"""
+                try:
+                    map =  dfile["map_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    nhit =  dfile["nhit_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    rms =  dfile["rms_beam"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                except KeyError:
+                    map =  dfile["map_coadd"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    nhit =  dfile["nhit_coadd"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    rms =  dfile["rms_coadd"][sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+                    
+
             elif self.full:
+                """Reading full dataset"""
                 map =  dfile["map"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 nhit =  dfile["nhit"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
                 rms =  dfile["rms"][self.det_list - 1, sb_start:sb_end + 1, freq_start:freq_end + 1, ...]
+
         return map, nhit, rms
         
-    def writeMap(self, jackmode = None, write_the_rest = False, custom_data = None, custom_name = None):
-        if custom_data != None and custom_name:
-            if map_name in self.ofile and self.access == "a":
-                """
-                To overwrite existing dataset with different shape, the existing
-                dataset must first be deleted.
-                """   
-                del self.ofile[map_name]
-                self.ofile.create_dataset(custom_name, data = custom_data)
-            else:
-                self.ofile.create_dataset(custom_name, data = custom_data)
+    def writeMap(self, jackmode = None, write_the_rest = False):
+        """
+        Function that saves self.map, self.nhit and self.rms class attributes are saved 
+        to output file. 
 
-        elif jackmode != None:
+        Parameters:
+        ------------------------------
+        jackkmode: str
+            A string containing the name of the chosen jackknife name; dayn, half, odde or sdlb.
+        write_the_rest: bool
+            If true all the other datasets and attributes from the first input file are 
+            (possibly modified accordingly and) copied to outfile.
+        ------------------------------
+        """
+
+        if (jackmode != None )and not write_the_rest:
+            """
+            Generating dataset names and writing jackknives 
+            datasets to outfile.
+            """
             map_name    = "jackknives/map_" + jackmode
             nhit_name   = "jackknives/nhit_" + jackmode
             rms_name    = "jackknives/rms_" + jackmode
-            if map_name in self.ofile and self.access == "a":
-                """
-                To overwrite existing dataset with different shape, the existing
-                dataset must first be deleted.
-                """   
-                del self.ofile[map_name]
-                del self.ofile[nhit_name]
-                del self.ofile[rms_name]
-                self.ofile.create_dataset(map_name, data = self.map)
-                self.ofile.create_dataset(nhit_name, data = self.nhit)
-                self.ofile.create_dataset(rms_name, data = self.rms)
-            else:
-                self.ofile.create_dataset(map_name, data = self.map)
-                self.ofile.create_dataset(nhit_name, data = self.nhit)
-                self.ofile.create_dataset(rms_name, data = self.rms)
+            
+            self.ofile.create_dataset(map_name, data = self.map)
+            self.ofile.create_dataset(nhit_name, data = self.nhit)
+            self.ofile.create_dataset(rms_name, data = self.rms)
 
-        elif self.beam or self.full:
+        elif (self.beam or self.full) and not write_the_rest:
             if self.beam:
-                map_name    = "map_beam"
-                nhit_name   = "nhit_beam"
-                rms_name    = "rms_beam"
+                """Generating dataset names for beam datasets"""
+                if "map_beam" in self.dfile1.keys():
+                    map_name    = "map_beam"
+                    nhit_name   = "nhit_beam"
+                    rms_name    = "rms_beam"
+                elif "map_coadd" in self.dfile1.keys():
+                    map_name    = "map_coadd"
+                    nhit_name   = "nhit_coadd"
+                    rms_name    = "rms_coadd"
+
             elif self.full: 
+                """Generating dataset names for full datasets"""
                 map_name    = "map"
                 nhit_name   = "nhit"
                 rms_name    = "rms"
-                
-            if map_name in self.ofile and self.access == "a":
-                """
-                To overwrite existing dataset with different shape, the existing
-                dataset must first be deleted.
-                """
-                del self.ofile[map_name]
-                del self.ofile[nhit_name]
-                del self.ofile[rms_name]
-                self.ofile.create_dataset(map_name, data = self.map)
-                self.ofile.create_dataset(nhit_name, data = self.nhit)
-                self.ofile.create_dataset(rms_name, data = self.rms)
-
-            else:
-                self.ofile.create_dataset(map_name, data = self.map)
-                self.ofile.create_dataset(nhit_name, data = self.nhit)
-                self.ofile.create_dataset(rms_name, data = self.rms)
+            
+            """Writing beam or full dataset to outfile"""
+            self.ofile.create_dataset(map_name, data = self.map)
+            self.ofile.create_dataset(nhit_name, data = self.nhit)
+            self.ofile.create_dataset(rms_name, data = self.rms)
         
         if write_the_rest:
+            """Copieing and modifying other datasets to outfile"""
             if self.infile1 != None and self.infile2 != None:
-                data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
-                                    "nhit_beam", "rms", "rms_beam"]
+                """Things not to copy because they are already copied or will be copied at different time""" 
+                
+                if "map_beam" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
+                                        "nhit_beam", "rms", "rms_beam"]
+                
+                elif "map_coadd" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_coadd", "nhit", 
+                                        "nhit_coadd", "rms", "rms_coadd"]
+                
+                
                 jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
                                        "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
                                        "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
+                """Looping through and copying over"""                      
                 for name in self.dfile1.keys():
                     if name not in self.ofile.keys() and name not in data_not_to_copy:
                         self.ofile.create_dataset(name, data = self.dfile1[name])    
@@ -385,7 +441,7 @@ class Atlas:
                     self.merge_numZ = 1
                 elif self.tool == "dgradeZ" or self.tool == "ugradeZ":
                     self.merge_numXY = 1
-                
+
                 condition1 = "x" in self.ofile and "y" in self.ofile 
                 condition2 = "n_x" in self.ofile and "n_y" in self.ofile 
                 condition3 = "nside" in self.ofile
@@ -393,16 +449,19 @@ class Atlas:
                 condition  = condition1 and condition2 and condition3 and condition4
 
                 if not condition and "dgrade" in self.tool:
+                    """Reading and modify other datasets"""
                     x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
                     x      = x1.reshape(int(len(x1) / self.merge_numXY), self.merge_numXY) 
                     y      = y1.reshape(int(len(y1) / self.merge_numXY), self.merge_numXY)
-                    x      = np.mean(x, axis = 1)
-                    y      = np.mean(y, axis = 1)
+                    x      = np.mean(x, axis = 1)   # Finding new pixel center by averaging neighboring pixel x coordinates
+                    y      = np.mean(y, axis = 1)   # Finding new pixel center by averaging neighboring pixel x coordinates
                     nside  = np.array(self.dfile1["nside"]) / self.merge_numXY                
                     freq   = self.dfile1["freq"][:]
                     freq   = freq.reshape(freq.shape[0], int(freq.shape[1] / self.merge_numZ), self.merge_numZ)
-                    freq   = np.mean(freq, axis = 2)
+                    freq   = np.mean(freq, axis = 2)    # Finding new frequency channel center by averaging 
+                                                        # neighbouring frequencies.
 
+                    """Copying over data"""
                     self.ofile.create_dataset("x",      data = x)
                     self.ofile.create_dataset("y",      data = y)
                     self.ofile.create_dataset("n_x",    data = len(x))
@@ -411,17 +470,31 @@ class Atlas:
                     self.ofile.create_dataset("freq",   data = freq)
 
                 elif not condition and "ugrade" in self.tool:
+                    """Reading and modifying other datasets"""
                     x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
-                    x      = np.linspace(np.min(x1), np.max(x1), len(x1) * self.merge_numXY) 
-                    y      = np.linspace(np.min(y1), np.max(y1), len(y1) * self.merge_numXY)
+                    dx, dy = x[1] - x[0], y[1] - y[0]
+                    first_center_x = x[0] - dx / 4  # Finding center of new pixels x value
+                    first_center_y = y[0] - dy / 4  # Finding center of new pixel y value
+                    x      = np.zeros(len(x1) * self.merge_numXY) 
+                    y      = np.zeros(len(y1) * self.merge_numXY)
+
+                    """Filling up x and y arrays with new pixel centers"""
+                    for i in range(len(x1)):
+                        x[i] = first_center_x + i * dx / 2
+                        y[i] = first_center_y + i * dy / 2
+
                     nside  = np.array(self.dfile1["nside"]) / self.merge_numXY                
+                    
                     freq1   = self.dfile1["freq"][:]
                     freq    = np.zeros((freq1.shape[0], freq1.shape[1] * self.merge_numZ))
+                    """Filling up frequency channe array with new bin centers"""
                     for i in range(freq.shape[0]):
-                        freq[i, :] = np.linspace(np.min(freq1[i, :]), 
-                                                 np.max(freq1[i, :]), 
-                                                 freq1.shape[1] * self.merge_numZ)
-                
+                        df = freq[1,:] - freq[0,:]
+                        first_center_freq = freq[i, 0] - df / 4 # Finding center of new pixel y value
+                        for j in range(freq.shape[1]):
+                            freq[i, j] = first_center_freq + j * df / 2 
+                    
+                    """Copying over data to outfile"""
                     self.ofile.create_dataset("x",      data = x)
                     self.ofile.create_dataset("y",      data = y)
                     self.ofile.create_dataset("n_x",    data = len(x))
@@ -429,9 +502,17 @@ class Atlas:
                     self.ofile.create_dataset("nside",  data = nside)
                     self.ofile.create_dataset("freq",   data = freq)
 
-                data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
-                                    "nhit_beam", "rms", "rms_beam",
-                                    "x", "y", "n_x", "n_y", "nside", "freq"]
+                """Copying over the remainder of the other datasets not yet copied"""
+                if "map_beam" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_beam", "nhit", 
+                                        "nhit_beam", "rms", "rms_beam",
+                                        "x", "y", "n_x", "n_y", "nside", "freq"]
+
+                elif "map_coadd" in self.dfile1.keys():
+                    data_not_to_copy = ["jackknives", "map", "map_coadd", "nhit", 
+                                        "nhit_coadd", "rms", "rms_coadd",
+                                        "x", "y", "n_x", "n_y", "nside", "freq"]
+
                 jk_data_not_to_copy = ["map_dayn",  "map_half",  "map_odde",  "map_sdlb",
                                        "nhit_dayn", "nhit_half", "nhit_odde", "nhit_sdlb",
                                        "rms_dayn",  "rms_half",  "rms_odde",  "rms_sdlb"]
@@ -445,9 +526,13 @@ class Atlas:
                                 self.ofile.create_dataset("jackknives/" + name, 
                                                             data = self.dfile1["jackknives/" + name])   
             
-
-    def operation(self):             
+    def operation(self):  
+        """
+        Function performes the operation with the tool and input file(s) given 
+        by the command line input arguments.
+        """           
         if self.infile1 != None and self.infile2 != None:
+            """Operations of two infiles"""
             if self.everything:
                 if "jackknives" in self.dfile1 and "jackknives" in self.dfile2:
                     for jack in self.jk:
@@ -563,6 +648,7 @@ class Atlas:
             self.writeMap(write_the_rest = True)
 
         if self.infile1 != None and self.infile2 == None:
+            """Operations to perform on single input file"""
             if self.everything:
                 if "jackknives" in self.dfile1:
                     for jack in self.jk:
@@ -895,613 +981,925 @@ class Atlas:
 
     def C_coadd4D(self, map1, nhit1, rms1,
                         map2, nhit2, rms2):
-        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.coadd4D.argtypes = [float32_array4, int32_array4, float32_array4,
+        """
+        Function taking inn 4D datasets from two infiles, and coadds them.
+        Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map1: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit1: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms1: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        map2: numpy.ndarray
+            Map dataset of second input file. Must be 4D array.
+        nhit2: numpy.ndarray
+            Number of hits dataset of second input file. Must be 4D array
+        rms2: numpy.ndarray
+            Rms dataset of second input file. Must be 4D array
+
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object.
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
+        
+        self.maputilslib.coadd4D.argtypes = [float32_array4, int32_array4, float32_array4,          # Specifying input types for C library function.
                                              float32_array4, int32_array4, float32_array4,
                                              float32_array4, int32_array4, float32_array4,
                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                              ctypes.c_int]
-        n0, n1, n2, n3  = self.map1.shape
-        self.map        = np.zeros_like(map1,   dtype = ctypes.c_float)
+        n0, n1, n2, n3  = self.map1.shape                               # Extracting axis lengths of 4D array to loop over in C.
+        self.map        = np.zeros_like(map1,   dtype = ctypes.c_float) # Generating arrays to fill up with coadded data.
         self.nhit       = np.zeros_like(nhit1,  dtype = ctypes.c_int)
         self.rms        = np.zeros_like(rms1,   dtype = ctypes.c_float)
-        self.maputilslib.coadd4D(map1, nhit1, rms1,
-                                 map2, nhit2, rms2, 
+
+        self.maputilslib.coadd4D(map1, nhit1, rms1,                     # Filling self.map, self.nhit and self.rms by 
+                                 map2, nhit2, rms2,                     # call-by-pointer to C library
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3)
     
     def C_coadd5D(self, map1, nhit1, rms1,
                         map2, nhit2, rms2):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.coadd5D.argtypes = [float32_array5, int32_array5, float32_array5,
+        """
+        Function taking inn 5D datasets from two infiles, and coadds them.
+        Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map1: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit1: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms1: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        map2: numpy.ndarray
+            Map dataset of second input file. Must be 5D array.
+        nhit2: numpy.ndarray
+            Number of hits dataset of second input file. Must be 5D array
+        rms2: numpy.ndarray
+            Rms dataset of second input file. Must be 5D array
+
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object.
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.coadd5D.argtypes = [float32_array5, int32_array5, float32_array5,          # Specifying input types for C library function.
                                             float32_array5, int32_array5, float32_array5,
                                             float32_array5, int32_array5, float32_array5,
                                             ctypes.c_int, ctypes.c_int, ctypes.c_int,
                                             ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3, n4 = self.map1.shape
-        self.map = np.zeros_like(map1, dtype = ctypes.c_float)
+        n0, n1, n2, n3, n4 = self.map1.shape                                # Extracting axis lengths of 5D array to loop over in C.
+        self.map = np.zeros_like(map1, dtype = ctypes.c_float)              # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros_like(nhit1, dtype = ctypes.c_int)
         self.rms = np.zeros_like(rms1, dtype = ctypes.c_float)
-        self.maputilslib.coadd5D(map1, nhit1, rms1,
-                                 map2, nhit2, rms2, 
+
+        self.maputilslib.coadd5D(map1, nhit1, rms1,                 # Filling self.map, self.nhit and self.rms by 
+                                 map2, nhit2, rms2,                 # call-by-pointer to C library
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3, n4)
                             
     def C_coadd6D(self, map1, nhit1, rms1,
                         map2, nhit2, rms2):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.coadd6D.argtypes = [float32_array6, int32_array6, float32_array6,
+        """
+        Function taking inn 6D datasets from two infiles, and coadds them.
+        Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map1: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit1: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms1: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        map2: numpy.ndarray
+            Map dataset of second input file. Must be 6D array.
+        nhit2: numpy.ndarray
+            Number of hits dataset of second input file. Must be 6D array
+        rms2: numpy.ndarray
+            Rms dataset of second input file. Must be 6D array
+
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object.
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
+
+        self.maputilslib.coadd6D.argtypes = [float32_array6, int32_array6, float32_array6,          # Specifying input types for C library function.
                                             float32_array6, int32_array6, float32_array6,
                                             float32_array6, int32_array6, float32_array6,
                                             ctypes.c_int, ctypes.c_int, ctypes.c_int,
                                             ctypes.c_int, ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = self.map1.shape
-        self.map = np.zeros_like(map1, dtype = ctypes.c_float)
+        n0, n1, n2, n3, n4, n5 = self.map1.shape                                        # Extracting axis lengths of 6D array to loop over in C.
+        self.map = np.zeros_like(map1, dtype = ctypes.c_float)                          # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros_like(nhit1, dtype = ctypes.c_int)
         self.rms = np.zeros_like(rms1, dtype = ctypes.c_float)
-        self.maputilslib.coadd6D(map1,     nhit1,     rms1,
-                                 map2,     nhit2,     rms2, 
+
+        self.maputilslib.coadd6D(map1,     nhit1,     rms1,             # Filling self.map, self.nhit and self.rms by
+                                 map2,     nhit2,     rms2,             # call-by-pointer to C library.
                                  self.map, self.nhit, self.rms,
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
 
     def C_subtract4D(self, map1, nhit1, rms1,
                            map2, nhit2, rms2):
-        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.subtract4D.argtypes = [float32_array4, int32_array4, float32_array4,
+        """
+        Function taking inn 4D datasets from two infiles, and subracts the second form the first.
+        Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map1: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit1: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms1: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        map2: numpy.ndarray
+            Map dataset of second input file. Must be 4D array.
+        nhit2: numpy.ndarray
+            Number of hits dataset of second input file. Must be 4D array
+        rms2: numpy.ndarray
+            Rms dataset of second input file. Must be 4D array
+
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object.
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
+
+        self.maputilslib.subtract4D.argtypes = [float32_array4, int32_array4, float32_array4,       # Specifying input types for C library function.
                                                 float32_array4, int32_array4, float32_array4,
                                                 float32_array4, int32_array4, float32_array4,
                                                 ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                 ctypes.c_int]
-        n0, n1, n2, n3  = self.map1.shape
-        self.map        = np.zeros_like(map1,   dtype = ctypes.c_float)
+        n0, n1, n2, n3  = self.map1.shape                                   # Extracting axis lengths of 4D array to loop over in C.
+        self.map        = np.zeros_like(map1,   dtype = ctypes.c_float)     # Generating arrays to fill up with coadded data.
         self.nhit       = np.zeros_like(nhit1,  dtype = ctypes.c_int)
         self.rms        = np.zeros_like(rms1,   dtype = ctypes.c_float)
-        self.maputilslib.subtract4D(map1, nhit1, rms1,
-                                 map2, nhit2, rms2, 
+
+        self.maputilslib.subtract4D(map1, nhit1, rms1,              # Filling self.map, self.nhit and self.rms by
+                                 map2, nhit2, rms2,                 # call-by-pointer to C library.
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3)
     
     def C_subtract5D(self, map1, nhit1, rms1,
                            map2, nhit2, rms2):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.subtract5D.argtypes = [float32_array5, int32_array5, float32_array5,
+        """
+        Function taking inn 5D datasets from two infiles, and subracts the second form the first.
+        Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map1: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit1: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms1: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        map2: numpy.ndarray
+            Map dataset of second input file. Must be 5D array.
+        nhit2: numpy.ndarray
+            Number of hits dataset of second input file. Must be 5D array
+        rms2: numpy.ndarray
+            Rms dataset of second input file. Must be 5D array
+
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object.
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.subtract5D.argtypes = [float32_array5, int32_array5, float32_array5,       # Specifying input types for C library function.
                                                 float32_array5, int32_array5, float32_array5,
                                                 float32_array5, int32_array5, float32_array5,
                                                 ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                 ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3, n4 = self.map1.shape
-        self.map = np.zeros_like(map1, dtype = ctypes.c_float)
-        self.nhit = np.zeros_like(nhit1, dtype = ctypes.c_int)
+        n0, n1, n2, n3, n4 = self.map1.shape                                    # Extracting axis lengths of 5D array to loop over in C.
+        self.map = np.zeros_like(map1, dtype = ctypes.c_float)                  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros_like(nhit1, dtype = ctypes.c_int)  
         self.rms = np.zeros_like(rms1, dtype = ctypes.c_float)
-        self.maputilslib.subtract5D(map1, nhit1, rms1,
-                                 map2, nhit2, rms2, 
+        
+        self.maputilslib.subtract5D(map1, nhit1, rms1,              # Filling self.map, self.nhit and self.rms by
+                                 map2, nhit2, rms2,                 # call-by-pointer to C library.
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3, n4)
                             
     def C_subtract6D(self, map1, nhit1, rms1,
                            map2, nhit2, rms2):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.subtract6D.argtypes = [float32_array6, int32_array6, float32_array6,
+        """
+        Function taking inn 6D datasets from two infiles, and subracts the second form the first.
+        Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map1: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit1: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms1: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        map2: numpy.ndarray
+            Map dataset of second input file. Must be 6D array.
+        nhit2: numpy.ndarray
+            Number of hits dataset of second input file. Must be 6D array
+        rms2: numpy.ndarray
+            Rms dataset of second input file. Must be 6D array
+
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object.
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
+
+        self.maputilslib.subtract6D.argtypes = [float32_array6, int32_array6, float32_array6,       # Specifying input types for C library function.
                                                 float32_array6, int32_array6, float32_array6,
                                                 float32_array6, int32_array6, float32_array6,
                                                 ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                 ctypes.c_int,   ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = self.map1.shape
-        self.map = np.zeros_like(map1, dtype = ctypes.c_float)
+        n0, n1, n2, n3, n4, n5 = self.map1.shape                    # Extracting axis lengths of 6D array to loop over in C.
+        self.map = np.zeros_like(map1, dtype = ctypes.c_float)      # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros_like(nhit1, dtype = ctypes.c_int)
         self.rms = np.zeros_like(rms1, dtype = ctypes.c_float)
-        self.maputilslib.subtract6D(map1,     nhit1,     rms1,
-                                 map2,     nhit2,     rms2, 
+
+        self.maputilslib.subtract6D(map1,     nhit1,     rms1,      # Filling self.map, self.nhit and self.rms by
+                                 map2,     nhit2,     rms2,         # call-by-pointer to C library.
                                  self.map, self.nhit, self.rms,
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
 
     def C_dgradeXY4D(self, map_h, nhit_h, rms_h):
-            float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-            int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-            self.maputilslib.dgradeXY4D.argtypes = [float32_array4, int32_array4, float32_array4,
-                                                  float32_array4, int32_array4, float32_array4,
-                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                  ctypes.c_int]
-            n0, n1, n2, n3 = map_h.shape
-            N2, N3 = int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)
-            
-            self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
-            self.nhit = np.zeros((n0, n1, N2, N3), dtype = ctypes.c_int)
-            self.rms = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
+        """
+        Function taking inn 4D datasets from one infile, and performes a co-merging of a given
+        number of neighboring pixels. Result is saved to class attributes self.map, self.nhit and self.rms.
 
-            self.maputilslib.dgradeXY4D(map_h,    nhit_h,     rms_h,
-                                    self.map,   self.nhit,  self.rms,
-                                    n0,         n1,         n2,
-                                    n3,         N2,         N3,
-                                    self.merge_numXY)
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object.
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
 
+        self.maputilslib.dgradeXY4D.argtypes = [float32_array4, int32_array4, float32_array4,       # Specifying input types for C library function.
+                                                float32_array4, int32_array4, float32_array4,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int]
+        n0, n1, n2, n3 = map_h.shape                                        # Extracting axis lengths of 4D array to loop over in C.
+        N2, N3 = int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)     # Size of the new pixel images
+        
+        self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)      # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, N2, N3), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
+
+        self.maputilslib.dgradeXY4D(map_h,    nhit_h,     rms_h,        # Filling self.map, self.nhit and self.rms by
+                                self.map,   self.nhit,  self.rms,       # call-by-pointer to C library.
+                                n0,         n1,         n2,
+                                n3,         N2,         N3,
+                                self.merge_numXY)
+        
     def C_dgradeXY5D(self, map_h, nhit_h, rms_h):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.dgradeXY5D.argtypes = [float32_array5, int32_array5, float32_array5,
+        """
+        Function taking inn 5D datasets from one infile, and performes a co-merging of a given
+        number of neighboring pixels. Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeXY5D.argtypes = [float32_array5, int32_array5, float32_array5,       # Specifying input types for C library function.
                                               float32_array5, int32_array5, float32_array5,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_h.shape
-        N3, N4 = int(n3 / self.merge_numXY), int(n4 / self.merge_numXY)
+        n0, n1, n2, n3, n4 = map_h.shape                                    # Extracting axis lengths of 5D array to loop over in C.
+        N3, N4 = int(n3 / self.merge_numXY), int(n4 / self.merge_numXY)     # Size of the new pixel images
         
-        self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
 
-        self.maputilslib.dgradeXY5D(map_h,    nhit_h,     rms_h,
-                                  self.map, self.nhit,  self.rms,
+        self.maputilslib.dgradeXY5D(map_h,    nhit_h,     rms_h,            # Filling self.map, self.nhit and self.rms by
+                                  self.map, self.nhit,  self.rms,           # call-by-pointer to C library.
                                   n0,       n1,         n2,
                                   n3,       n4,         N3,
                                   N4,       self.merge_numXY)
 
+
     def C_dgradeXY6D(self, map_h, nhit_h, rms_h):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.dgradeXY6D.argtypes = [float32_array6, int32_array6, float32_array6,
+        """
+        Function taking inn 6D datasets from one infile, and performes a co-merging of a given
+        number of neighboring pixels. Result is saved to class attributes self.map, self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeXY6D.argtypes = [float32_array6, int32_array6, float32_array6,       # Specifying input types for C library function.
                                               float32_array6, int32_array6, float32_array6,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_h.shape
-        N4, N5 = int(n4 / self.merge_numXY), int(n5 / self.merge_numXY)
+        n0, n1, n2, n3, n4, n5 = map_h.shape                                                # Extracting axis lengths of 6D array to loop over in C.
+        N4, N5 = int(n4 / self.merge_numXY), int(n5 / self.merge_numXY)                     # Size of the new pixel images
         
-        self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)      # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
 
-        self.maputilslib.dgradeXY6D(map_h,        nhit_h,         rms_h,
-                                  self.map,     self.nhit,      self.rms,
+        self.maputilslib.dgradeXY6D(map_h,        nhit_h,         rms_h,            # Filling self.map, self.nhit and self.rms by
+                                  self.map,     self.nhit,      self.rms,           # call-by-pointer to C library.
                                   n0,           n1,             n2,
                                   n3,           n4,             n5, 
                                   N4,           N5,             self.merge_numXY)
 
     def C_dgradeZ4D(self, map_h, nhit_h, rms_h):
-            float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-            int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-            self.maputilslib.dgradeZ4D.argtypes = [float32_array4, int32_array4, float32_array4,
-                                                  float32_array4, int32_array4, float32_array4,
-                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int]
-            n0, n1, n2, n3  = map_h.shape
-            N1              = int(n1 / self.merge_numZ)
-            
-            self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
-            self.nhit = np.zeros((n0, N1, n2, n3), dtype = ctypes.c_int)
-            self.rms = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
+        """
+        Function taking inn 4D datasets from one infile, and performes a co-merging of a given
+        number of neighboring frequency channels. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
 
-            self.maputilslib.dgradeZ4D(map_h,    nhit_h,     rms_h,
-                                       self.map,   self.nhit,  self.rms,
-                                       n0,         n1,         n2,
-                                       n3,         N1,         self.merge_numZ)
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeZ4D.argtypes = [float32_array4, int32_array4, float32_array4,        # Specifying input types for C library function.
+                                                float32_array4, int32_array4, float32_array4,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3  = map_h.shape                   # Extracting axis lengths of 4D array to loop over in C.
+        N1              = int(n1 / self.merge_numZ)     # Size of the new pixel channel axis
+        
+        self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, N1, n2, n3), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
+
+        self.maputilslib.dgradeZ4D(map_h,    nhit_h,     rms_h,                 # Filling self.map, self.nhit and self.rms by
+                                    self.map,   self.nhit,  self.rms,           # call-by-pointer to C library.
+                                    n0,         n1,         n2,
+                                    n3,         N1,         self.merge_numZ)
 
     def C_dgradeZ5D(self, map_h, nhit_h, rms_h):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.dgradeZ5D.argtypes = [float32_array5, int32_array5, float32_array5,
+        """
+        Function taking inn 5D datasets from one infile, and performes a co-merging of a given
+        number of neighboring frequency channels. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeZ5D.argtypes = [float32_array5, int32_array5, float32_array5,        # Specifying input types for C library function.
                                               float32_array5, int32_array5, float32_array5,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_h.shape
-        N2 = int(n2 / self.merge_numZ)
+        n0, n1, n2, n3, n4 = map_h.shape        # Extracting axis lengths of 5D array to loop over in C.
+        N2 = int(n2 / self.merge_numZ)          # Size of the new pixel channel axis
         
-        self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros((n0, n1, N2, n3, n4), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
 
-        self.maputilslib.dgradeZ5D(map_h,    nhit_h,     rms_h,
-                                  self.map, self.nhit,  self.rms,
+        self.maputilslib.dgradeZ5D(map_h,    nhit_h,     rms_h,     # Filling self.map, self.nhit and self.rms by
+                                  self.map, self.nhit,  self.rms,   # call-by-pointer to C library.
                                   n0,       n1,         n2,
                                   n3,       n4,         N2,
                                   self.merge_numZ)
 
     def C_dgradeZ6D(self, map_h, nhit_h, rms_h):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.dgradeZ6D.argtypes = [float32_array6, int32_array6, float32_array6,
+        """
+        Function taking inn 6D datasets from one infile, and performes a co-merging of a given
+        number of neighboring frequency channels. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeZ6D.argtypes = [float32_array6, int32_array6, float32_array6,        # Specifying input types for C library function.
                                               float32_array6, int32_array6, float32_array6,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_h.shape
-        N3 = int(n3 / self.merge_numZ)
+        n0, n1, n2, n3, n4, n5 = map_h.shape        # Extracting axis lengths of 6D array to loop over in C.
+        N3 = int(n3 / self.merge_numZ)              # Size of the new pixel channel axis
         
-        self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
 
-        self.maputilslib.dgradeZ6D(map_h,        nhit_h,         rms_h,
-                                  self.map,     self.nhit,      self.rms,
+        self.maputilslib.dgradeZ6D(map_h,        nhit_h,         rms_h,     # Filling self.map, self.nhit and self.rms by
+                                  self.map,     self.nhit,      self.rms,   # call-by-pointer to C library.
                                   n0,           n1,             n2,
                                   n3,           n4,             n5, 
                                   N3,           self.merge_numZ)
     
     def C_dgradeXYZ4D(self, map_h, nhit_h, rms_h):
-            float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-            int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-            self.maputilslib.dgradeXYZ4D.argtypes = [float32_array4, int32_array4, float32_array4,
-                                                  float32_array4, int32_array4, float32_array4,
-                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int,
-                                                  ctypes.c_int,   ctypes.c_int, ctypes.c_int]
-            n0, n1, n2, n3 = map_h.shape
-            N1, N2, N3 = int(n1 / self.merge_numZ), int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)
-            
-            self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
-            self.nhit = np.zeros((n0, N1, N2, N3), dtype = ctypes.c_int)
-            self.rms = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
+        """
+        Function taking inn 4D datasets from one infile, and performes a co-merging of a given
+        number of neighboring pixels and frequency channels. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
 
-            self.maputilslib.dgradeXYZ4D(map_h,    nhit_h,          rms_h,
-                                         self.map, self.nhit,       self.rms,
-                                         n0,       n1,              n2,
-                                         n3,       N1,              N2,
-                                         N3,       self.merge_numZ,  self.merge_numXY)
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object.
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeXYZ4D.argtypes = [float32_array4, int32_array4, float32_array4,  # Specifying input types for C library function.
+                                                float32_array4, int32_array4, float32_array4,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3 = map_h.shape        # Extracting axis lengths of 4D array to loop over in C.
+
+        N1, N2, N3 = int(n1 / self.merge_numZ), int(n2 / self.merge_numXY), int(n3 / self.merge_numXY)  # Size of the new pixel-freq cube
+        
+        self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, N1, N2, N3), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
+
+        self.maputilslib.dgradeXYZ4D(map_h,    nhit_h,          rms_h,          # Filling self.map, self.nhit and self.rms by
+                                    self.map, self.nhit,       self.rms,        # call-by-pointer to C library.
+                                    n0,       n1,              n2,
+                                    n3,       N1,              N2,
+                                    N3,       self.merge_numZ,  self.merge_numXY)
 
     def C_dgradeXYZ5D(self, map_h, nhit_h, rms_h):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.dgradeXYZ5D.argtypes = [float32_array5, int32_array5, float32_array5,
+        """
+        Function taking inn 5D datasets from one infile, and performes a co-merging of a given
+        number of neighboring pixels and frequency channels. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object.
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeXYZ5D.argtypes = [float32_array5, int32_array5, float32_array5,      # Specifying input types for C library function.
                                               float32_array5, int32_array5, float32_array5,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_h.shape
-        N2, N3, N4 = int(n2 / self.merge_numZ), int(n3 / self.merge_numXY), int(n4 / self.merge_numXY)
+        n0, n1, n2, n3, n4 = map_h.shape    # Extracting axis lengths of 5D array to loop over in C.
+
+        N2, N3, N4 = int(n2 / self.merge_numZ), int(n3 / self.merge_numXY), int(n4 / self.merge_numXY)  # Size of the new pixel-freq cube
         
-        self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros((n0, n1, N2, N3, N4), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
 
-        self.maputilslib.dgradeXYZ5D(map_h,    nhit_h,     rms_h,
-                                  self.map, self.nhit,  self.rms,
-                                  n0,       n1,         n2,
-                                  n3,       n4,         N2,
-                                  N3,       N4,         self.merge_numZ,
-                                  self.merge_numXY)
+        self.maputilslib.dgradeXYZ5D(map_h,    nhit_h,     rms_h,       # Filling self.map, self.nhit and self.rms by
+                                    self.map, self.nhit,  self.rms,     # call-by-pointer to C library.
+                                    n0,       n1,         n2,
+                                    n3,       n4,         N2,
+                                    N3,       N4,         self.merge_numZ,
+                                    self.merge_numXY)
 
     def C_dgradeXYZ6D(self, map_h, nhit_h, rms_h):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.dgradeXYZ6D.argtypes = [float32_array6, int32_array6, float32_array6,
+        """
+        Function taking inn 6D datasets from one infile, and performes a co-merging of a given
+        number of neighboring pixels and frequency channels. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_h: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit_h: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms_h: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object.
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
+
+        self.maputilslib.dgradeXYZ6D.argtypes = [float32_array6, int32_array6, float32_array6,      # Specifying input types for C library function.
                                               float32_array6, int32_array6, float32_array6,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                               ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_h.shape
-        N3, N4, N5 = int(n3 / self.merge_numZ), int(n4 / self.merge_numXY), int(n5 / self.merge_numXY)
+        n0, n1, n2, n3, n4, n5 = map_h.shape        # Extracting axis lengths of 6D array to loop over in C.
+
+        N3, N4, N5 = int(n3 / self.merge_numZ), int(n4 / self.merge_numXY), int(n5 / self.merge_numXY)  # Size of the new pixel-freq cube
         
-        self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
+        self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
         self.nhit = np.zeros((n0, n1, n2, N3, N4, N5), dtype = ctypes.c_int)
         self.rms = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
 
-        self.maputilslib.dgradeXYZ6D(map_h,         nhit_h,         rms_h,
-                                  self.map,         self.nhit,      self.rms,
+        self.maputilslib.dgradeXYZ6D(map_h,         nhit_h,         rms_h,      # Filling self.map, self.nhit and self.rms by
+                                  self.map,         self.nhit,      self.rms,   # call-by-pointer to C library.
                                   n0,               n1,             n2,
                                   n3,               n4,             n5, 
                                   N3,               N4,             N5,
                                   self.merge_numZ,  self.merge_numXY)
 
+    def C_ugradeXY4D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 4D datasets from one infile, and performes a transformation of a low-resolution
+        pixel grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
 
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object.
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
 
-    def C_ugradeXY4D_float(self, map_l):
-        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeXY4D_float.argtypes = [float32_array4, float32_array4, ctypes.c_int,   
-                                                    ctypes.c_int,   ctypes.c_int,   ctypes.c_int,   
-                                                    ctypes.c_int,   ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3 = map_l.shape
-        N2, N3 = n2 * self.merge_numXY, n3 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeXY4D_float(self.map,   map_l,      n0,         
-                                    n1,         n2,         n3,         
-                                    N2,         N3,         self.merge_numXY)
-
-    def C_ugradeXY5D_float(self, map_l):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeXY5D_float.argtypes = [float32_array5,   float32_array5, ctypes.c_int,   
-                                                        ctypes.c_int,   ctypes.c_int,   ctypes.c_int,   
-                                                        ctypes.c_int,   ctypes.c_int,   ctypes.c_int,   
-                                                        ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_l.shape
-        N3, N4 = n3 * self.merge_numXY, n4 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeXY5D_float(self.map, map_l,        n0,       
-                                        n1,         n2,         n3,       
-                                        n4,         N3,         N4,       
-                                        self.merge_numXY)
-
-    def C_ugradeXY6D_float(self, map_l):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeXY6D_float.argtypes = [float32_array6,  float32_array6,    ctypes.c_int,   
-                                                        ctypes.c_int,   ctypes.c_int,     ctypes.c_int,   
-                                                        ctypes.c_int,   ctypes.c_int,     ctypes.c_int,   
-                                                        ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_l.shape
-        N4, N5 = n4 * self.merge_numXY, n5 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeXY6D_float(self.map,     map_l,      n0,           
-                                        n1,             n2,         n3,           
-                                        n4,             n5,         N4,           
-                                        N5,             self.merge_numXY)
-
-    def C_ugradeZ4D_float(self, map_l):
-        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeZ4D_float.argtypes = [float32_array4, float32_array4,    ctypes.c_int,   
-                                                    ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
-                                                    ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3  = map_l.shape
-        N1              = n1 * self.merge_numZ
-        
-        self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeZ4D_float(self.map,   map_l,     n0,         
-                                        n1,          n2,        n3,         
-                                        N1,         self.merge_numZ)
-
-    def C_ugradeZ5D_float(self, map_l):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeZ5D_float.argtypes = [float32_array5, float32_array5,  ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_l.shape
-        N2 = n2 * self.merge_numZ
-        
-        self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeZ5D_float(self.map,  map_l,  n0,       
-                                        n1,         n2,     n3,       
-                                        n4,         N2,     self.merge_numZ)
-
-    def C_ugradeZ6D_float(self, map_l):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeZ6D_float.argtypes = [float32_array6, float32_array6,  ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
-                                                    ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_l.shape
-        N3 = n3 * self.merge_numZ
-        
-        self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeZ6D_float(self.map,     map_l,     n0,           
-                                        n1,             n2,     n3,           
-                                        n4,             n5,     N3,           
-                                        self.merge_numZ)
-    
-    def C_ugradeXYZ4D_float(self, map_l):
-        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeXYZ4D_float.argtypes = [float32_array4, float32_array4,    ctypes.c_int,   
-                                                ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
-                                                ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
-                                                ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3 = map_l.shape
-        N1, N2, N3 = n1 * self.merge_numZ, n2 * self.merge_numXY, n3 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeXYZ4D_float(self.map,    map_l,      n0,       
-                                            n1,         n2,         n3,       
-                                            N1,         N2,         N3,       
-                                            self.merge_numZ,  self.merge_numXY)
-
-    def C_ugradeXYZ5D_float(self, map_l):
-        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeXYZ5D_float.argtypes = [float32_array5, float32_array5,    ctypes.c_int,   
-                                                        ctypes.c_int,   ctypes.c_int,       ctypes.c_int,   
-                                                        ctypes.c_int, ctypes.c_int,         ctypes.c_int,   
-                                                        ctypes.c_int, ctypes.c_int,         ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_l.shape
-        N2, N3, N4 = n2 * self.merge_numZ, n3 * self.merge_numXY, n4 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeXYZ5D_float(self.map, map_l,                 n0,       
-                                            n1,         n2,                 n3,       
-                                            n4,         N2,                 N3,       
-                                            N4,         self.merge_numZ,    self.merge_numXY)
-
-    def C_ugradeXYZ6D_float(self, map_l):
-        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeXYZ6D_float.argtypes = [float32_array6, float32_array6,    ctypes.c_int,   
-                                                        ctypes.c_int, ctypes.c_int,       ctypes.c_int,   
-                                                        ctypes.c_int, ctypes.c_int,       ctypes.c_int,   
-                                                        ctypes.c_int, ctypes.c_int,       ctypes.c_int,   
-                                                        ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_l.shape
-        N3, N4, N5 = n3 * self.merge_numZ, n4 * self.merge_numXY, n5 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
-
-        self.maputilslib.ugradeXYZ6D_float(self.map,         map_l,     n0,               
-                                            n1,             n2,         n3,               
-                                            n4,             n5,         N3,               
-                                            N4,             N5,         self.merge_numZ,  
-                                            self.merge_numXY)
-
-
-
-    def C_ugradeXY4D_int(self, map_l):
-        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeXY4D_int.argtypes = [int32_array4, int32_array4, ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3 = map_l.shape
-        N2, N3 = n2 * self.merge_numXY, n3 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_int)
-
-        self.maputilslib.ugradeXY4D_int(self.map,   map_l,      n0,         
-                                    n1,         n2,         n3,         
-                                    N2,         N3,         self.merge_numXY)
-
-    def C_ugradeXY5D_int(self, map_l):
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeXY5D_int.argtypes = [int32_array5, int32_array5, ctypes.c_int,
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int,   
-                                                    ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_l.shape
-        N3, N4 = n3 * self.merge_numXY, n4 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_int)
-        
-        self.maputilslib.ugradeXY5D_int(self.map,   map_l,      n0,       
-                                        n1,         n2,         n3,       
-                                        n4,         N3,         N4,       
-                                        self.merge_numXY)
-
-    def C_ugradeXY6D_int(self, map_l):
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeXY6D_int.argtypes = [int32_array6, int32_array6,     ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_l.shape
-        N4, N5 = n4 * self.merge_numXY, n5 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
-        
-        self.maputilslib.ugradeXY6D_int(self.map,     map_l,    n0,           
-                                        n1,           n2,       n3,           
-                                        n4,           n5,       N4,           
-                                        N5,           self.merge_numXY)
-
-    def C_ugradeZ4D_int(self, map_l):
-        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeZ4D_int.argtypes = [int32_array4,    int32_array4,   ctypes.c_int,   
-                                                    ctypes.c_int,   ctypes.c_int,   ctypes.c_int,   
-                                                    ctypes.c_int,   ctypes.c_int]
-        n0, n1, n2, n3  = map_l.shape
-        N1              = n1 * self.merge_numZ
-        
-        self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_int)
-
-        self.maputilslib.ugradeZ4D_int(self.map,   map_l,   n0,         
-                                        n1,        n2,      n3,         
-                                        N1,        self.merge_numZ)
-
-    def C_ugradeZ5D_int(self, map_l):
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeZ5D_int.argtypes = [int32_array5, int32_array5, ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_l.shape
-        N2 = n2 * self.merge_numZ
-        
-        self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_int)
-
-        self.maputilslib.ugradeZ5D_int(self.map,    map_l,      n0,       
-                                        n1,         n2,         n3,       
-                                        n4,         N2,         self.merge_numZ)
-
-    def C_ugradeZ6D_int(self, map_l):
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeZ6D_int.argtypes = [int32_array6, int32_array6, ctypes.c_int,   
-                                                   ctypes.c_int, ctypes.c_int, ctypes.c_int,   
-                                                   ctypes.c_int, ctypes.c_int, ctypes.c_int,   
-                                                   ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_l.shape
-        N3 = n3 * self.merge_numZ
-        
-        self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
-
-        self.maputilslib.ugradeZ6D_int(self.map,     map_l,     n0,           
-                                        n1,             n2,     n3,           
-                                        n4,             n5,     N3,           
-                                        self.merge_numZ)
-    
-    def C_ugradeXYZ4D_int(self, map_l):
-        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")
-        self.maputilslib.ugradeXYZ4D_int.argtypes = [int32_array4, int32_array4,    ctypes.c_int,   
-                                                    ctypes.c_int,   ctypes.c_int,   ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int,     ctypes.c_int,   
-                                                    ctypes.c_int, ctypes.c_int]
-        n0, n1, n2, n3 = map_l.shape
-        N1, N2, N3 = n1 * self.merge_numZ, n2 * self.merge_numXY, n3 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_int)
-
-        self.maputilslib.ugradeXYZ4D_int(self.map,          map_l,       n0,       
-                                         n1,                n2,          n3,       
-                                         N1,                N2,          N3,       
-                                         self.merge_numZ,   self.merge_numXY)
-
-    def C_ugradeXYZ5D_int(self, map_l):
-        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")
-        self.maputilslib.ugradeXYZ5D_int.argtypes = [int32_array5, int32_array5, ctypes.c_int,   
-                                                ctypes.c_int, ctypes.c_int,  ctypes.c_int,      
-                                                ctypes.c_int, ctypes.c_int,  ctypes.c_int,   
-                                                ctypes.c_int, ctypes.c_int,  ctypes.c_int]
-        n0, n1, n2, n3, n4 = map_l.shape
-        N2, N3, N4 = n2 * self.merge_numZ, n3 * self.merge_numXY, n4 * self.merge_numXY
-        
-        self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_int)
-
-        self.maputilslib.ugradeXYZ5D_int(self.map, map_l,               n0,       
-                                     n1,         n2,                n3,       
-                                     n4,         N2,                N3,       
-                                     N4,         self.merge_numZ,   self.merge_numXY)
-
-    def C_ugradeXYZ6D_int(self, map_l):
-        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")
-        self.maputilslib.ugradeXYZ6D_int.argtypes = [int32_array6,  int32_array6,    ctypes.c_int,   
-                                                ctypes.c_int,   ctypes.c_int,    ctypes.c_int,   
-                                                ctypes.c_int,   ctypes.c_int,    ctypes.c_int,   
-                                                ctypes.c_int,   ctypes.c_int,    ctypes.c_int,   
+        self.maputilslib.ugradeXY4D.argtypes = [float32_array4, int32_array4, float32_array4,       # Specifying input types for C library function.
+                                                float32_array4, int32_array4, float32_array4,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
                                                 ctypes.c_int]
-        n0, n1, n2, n3, n4, n5 = map_l.shape
-        N3, N4, N5 = n3 * self.merge_numZ, n4 * self.merge_numXY, n5 * self.merge_numXY
+        n0, n1, n2, n3 = map_l.shape                            # Extracting axis lengths of 4D array to loop over in C.
+        N2, N3 = n2 * self.merge_numXY, n3 * self.merge_numXY   # Size of the new pixel image
         
-        self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_int)
+        self.map = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, N2, N3), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, N2, N3), dtype = ctypes.c_float)
 
-        self.maputilslib.ugradeXYZ6D_int(self.map,        map_l,           n0,               
-                                     n1,              n2,              n3,               
-                                     n4,              n5,              N3,               
-                                     N4,              N5,              self.merge_numZ,  
+        self.maputilslib.ugradeXY4D(self.map,   self.nhit,  self.rms,   # Filling self.map, self.nhit and self.rms by
+                                    map_l,    nhit_l,     rms_l,        # call-by-pointer to C library.
+                                    n0,         n1,         n2,
+                                    n3,         N2,         N3,
+                                    self.merge_numXY)
+
+    def C_ugradeXY5D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 5D datasets from one infile, and performes a transformation of a low-resolution
+        pixel grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object.
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.ugradeXY5D.argtypes = [float32_array5, int32_array5, float32_array5,       # Specifying input types for C library function.
+                                              float32_array5, int32_array5, float32_array5,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int]
+        n0, n1, n2, n3, n4 = map_l.shape                        # Extracting axis lengths of 5D array to loop over in C.
+        N3, N4 = n3 * self.merge_numXY, n4 * self.merge_numXY   # Size of the new pixel image
+        
+        self.map = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, n2, N3, N4), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, N3, N4), dtype = ctypes.c_float)
+
+        self.maputilslib.ugradeXY5D(self.map, self.nhit,  self.rms,         # Filling self.map, self.nhit and self.rms by
+                                    map_l,    nhit_l,     rms_l,            # call-by-pointer to C library.
+                                    n0,       n1,         n2,
+                                    n3,       n4,         N3,
+                                    N4,       self.merge_numXY)
+
+    def C_ugradeXY6D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 6D datasets from one infile, and performes a transformation of a low-resolution
+        pixel grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object.
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
+
+        self.maputilslib.ugradeXY6D.argtypes = [float32_array6, int32_array6, float32_array6,       # Specifying input types for C library function.
+                                              float32_array6, int32_array6, float32_array6,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3, n4, n5 = map_l.shape                    # Extracting axis lengths of 6D array to loop over in C.
+        N4, N5 = n4 * self.merge_numXY, n5 * self.merge_numXY   # Size of the new pixel image
+        
+        self.map = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, n2, n3, N4, N5), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, n3, N4, N5), dtype = ctypes.c_float)
+
+        self.maputilslib.ugradeXY6D(self.map,     self.nhit,      self.rms,         # Filling self.map, self.nhit and self.rms by
+                                    map_l,        nhit_l,         rms_l,            # call-by-pointer to C library.
+                                    n0,           n1,             n2,
+                                    n3,           n4,             n5, 
+                                    N4,           N5,             self.merge_numXY)
+
+    def C_ugradeZ4D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 4D datasets from one infile, and performes a transformation of a low-resolution
+        frequency grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object.
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
+
+        self.maputilslib.ugradeZ4D.argtypes = [float32_array4, int32_array4, float32_array4,        # Specifying input types for C library function.
+                                                float32_array4, int32_array4, float32_array4,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3  = map_l.shape               # Extracting axis lengths of 4D array to loop over in C.
+        N1              = n1 * self.merge_numZ      # Size of the new frequency axis
+        
+        self.map = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)      # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, N1, n2, n3), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, N1, n2, n3), dtype = ctypes.c_float)
+
+        self.maputilslib.ugradeZ4D(self.map,   self.nhit,  self.rms,        # Filling self.map, self.nhit and self.rms by
+                                   map_l,      nhit_l,     rms_l,           # call-by-pointer to C library.
+                                   n0,         n1,         n2,
+                                   n3,         N1,         self.merge_numZ)
+
+    def C_ugradeZ5D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 5D datasets from one infile, and performes a transformation of a low-resolution
+        frequency grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object.
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.ugradeZ5D.argtypes = [float32_array5, int32_array5, float32_array5,        # Specifying input types for C library function.
+                                              float32_array5, int32_array5, float32_array5,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int]
+        n0, n1, n2, n3, n4 = map_l.shape        # Extracting axis lengths of 5D array to loop over in C.
+        N2 = n2 * self.merge_numZ               # Size of the new frequency axis
+        
+        self.map = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)      # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, N2, n3, n4), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, N2, n3, n4), dtype = ctypes.c_float)
+
+        self.maputilslib.ugradeZ5D(self.map, self.nhit,  self.rms,          # Filling self.map, self.nhit and self.rms by
+                                   map_l,    nhit_l,     rms_l,             # call-by-pointer to C library.
+                                   n0,       n1,         n2,
+                                   n3,       n4,         N2,
+                                   self.merge_numZ)
+
+    def C_ugradeZ6D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 6D datasets from one infile, and performes a transformation of a low-resolution
+        frequency grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object.
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
+
+        self.maputilslib.ugradeZ6D.argtypes = [float32_array6, int32_array6, float32_array6,        # Specifying input types for C library function.
+                                              float32_array6, int32_array6, float32_array6,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int]
+        n0, n1, n2, n3, n4, n5 = map_l.shape        # Extracting axis lengths of 6D array to loop over in C.
+        N3 = n3 * self.merge_numZ                   # Size of the new frequency axis
+        
+        self.map = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, n2, N3, n4, n5), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, N3, n4, n5), dtype = ctypes.c_float)
+
+        self.maputilslib.ugradeZ6D(self.map,     self.nhit,      self.rms,      # Filling self.map, self.nhit and self.rms by
+                                   map_l,        nhit_l,         rms_l,         # call-by-pointer to C library.
+                                   n0,           n1,             n2,
+                                   n3,           n4,             n5, 
+                                   N3,           self.merge_numZ)
+    
+    def C_ugradeXYZ4D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 4D datasets from one infile, and performes a transformation of a low-resolution
+        pixel-frequency grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 4D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 4D array
+        ------------------------------
+        """
+        float32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=4, flags="contiguous")   # 4D array 32-bit float pointer object.
+        int32_array4 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=4, flags="contiguous")       # 4D array 32-bit integer pointer object.
+
+        self.maputilslib.ugradeXYZ4D.argtypes = [float32_array4, int32_array4, float32_array4,      # Specifying input types for C library function.
+                                                float32_array4, int32_array4, float32_array4,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                                ctypes.c_int,   ctypes.c_int, ctypes.c_int]
+        n0, n1, n2, n3 = map_l.shape            # Extracting axis lengths of 4D array to loop over in C.
+
+        N1, N2, N3 = n1 * self.merge_numZ, n2 * self.merge_numXY, n3 * self.merge_numXY     # Size of the new pixel-freq cube
+        
+        self.map = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)      # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, N1, N2, N3), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, N1, N2, N3), dtype = ctypes.c_float)
+
+        self.maputilslib.ugradeXYZ4D(self.map, self.nhit,       self.rms,           # Filling self.map, self.nhit and self.rms by
+                                     map_l,    nhit_l,          rms_l,              # call-by-pointer to C library.
+                                     n0,       n1,              n2,
+                                     n3,       N1,              N2,
+                                     N3,       self.merge_numZ,  self.merge_numXY)
+
+    def C_ugradeXYZ5D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 5D datasets from one infile, and performes a transformation of a low-resolution
+        pixel-frequency grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 5D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 5D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 5D array
+        ------------------------------
+        """
+        float32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=5, flags="contiguous")   # 5D array 32-bit float pointer object.
+        int32_array5 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=5, flags="contiguous")       # 5D array 32-bit integer pointer object.
+
+        self.maputilslib.ugradeXYZ5D.argtypes = [float32_array5, int32_array5, float32_array5,  # Specifying input types for C library function.
+                                              float32_array5, int32_array5, float32_array5,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int]
+        n0, n1, n2, n3, n4 = map_l.shape    # Extracting axis lengths of 5D array to loop over in C.
+
+        N2, N3, N4 = n2 * self.merge_numZ, n3 * self.merge_numXY, n4 * self.merge_numXY # Size of the new pixel-freq cube
+        
+        self.map = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, N2, N3, N4), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, N2, N3, N4), dtype = ctypes.c_float)
+
+        self.maputilslib.ugradeXYZ5D(self.map, self.nhit,  self.rms,            # Filling self.map, self.nhit and self.rms by
+                                     map_l,    nhit_l,     rms_l,               # call-by-pointer to C library.
+                                     n0,       n1,         n2,
+                                     n3,       n4,         N2,
+                                     N3,       N4,         self.merge_numZ,
                                      self.merge_numXY)
 
+    def C_ugradeXYZ6D(self, map_l, nhit_l, rms_l):
+        """
+        Function taking inn 6D datasets from one infile, and performes a transformation of a low-resolution
+        pixel-frequency grid to a high-resolution one. Result is saved to class attributes self.map, 
+        self.nhit and self.rms.
 
-    def add(self, data1, data2):
-        return data1 + data2
-    
-    def subtract(self, data1, data2):
-        return data1 - data2
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 6D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 6D array
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 6D array
+        ------------------------------
+        """
+        float32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_float, ndim=6, flags="contiguous")   # 6D array 32-bit float pointer object.
+        int32_array6 = np.ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=6, flags="contiguous")       # 6D array 32-bit integer pointer object.
 
-    def multiply(self, data, factor):
-        return factor * data
+        self.maputilslib.ugradeXYZ6D.argtypes = [float32_array6, int32_array6, float32_array6,      # Specifying input types for C library function.
+                                              float32_array6, int32_array6, float32_array6,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int, ctypes.c_int,
+                                              ctypes.c_int,   ctypes.c_int]
+        n0, n1, n2, n3, n4, n5 = map_l.shape        # Extracting axis lengths of 6D array to loop over in C.
 
-    def coadd(self, map1, map2, inv_rms1, inv_rms2):
-        inv_var1 = np.square(inv_rms1)
-        inv_var2 = np.square(inv_rms2)
-        var_inv = inv_var1 + inv_var2
-        coadded = map1 * inv_var1 + map2 * inv_var2
-        coadded /= var_inv
-        return coadded
+        N3, N4, N5 = n3 * self.merge_numZ, n4 * self.merge_numXY, n5 * self.merge_numXY # Size of the new pixel-freq cube
+        
+        self.map = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)  # Generating arrays to fill up with coadded data.
+        self.nhit = np.zeros((n0, n1, n2, N3, N4, N5), dtype = ctypes.c_int)
+        self.rms = np.zeros( (n0, n1, n2, N3, N4, N5), dtype = ctypes.c_float)
 
-    def add_rms(self, rms1, rms2):
-        var1 = np.square(rms1)
-        var2 = np.square(rms2)
-        sum = var1 + var2 
-        sum = np.sqrt(sum)
-        return sum
+        self.maputilslib.ugradeXYZ6D(self.map,         self.nhit,      self.rms,    # Filling self.map, self.nhit and self.rms by
+                                     map_l,            nhit_l,         rms_l,       # call-by-pointer to C library.
+                                     n0,               n1,             n2,
+                                     n3,               n4,             n5, 
+                                     N3,               N4,             N5,
+                                     self.merge_numZ,  self.merge_numXY)
 
 if __name__ == "__main__":
     t = time.time()

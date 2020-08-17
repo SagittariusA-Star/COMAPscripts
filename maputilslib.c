@@ -11,11 +11,41 @@ void coadd4D(float* map1, int* nhit1, float* rms1,
              int n0,      int n1,     int n2, 
              int n3                
              ){
-    int prod = n2 * n3;
-    int prod1 = prod * n1;
-    int idx;
-    float inv_var1, inv_var2;
+    /*
+    Function looping through 4D datasets of two input files and coadding them, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map1: float*
+        First input map dataset.
+    nhit1: int*
+        First input nhit dataset.
+    rms1: float*
+        First input rms dataset.
+    map2: float*
+        Second input map2 dataset.
+    nhit2: int*
+        Second input nhit2 dataset.
+    rms2: float*
+        Second input rms2 dataset.
+    map: float*
+        Output map dataset to be filled with coadded data.
+    nhit: int*
+        Output nhit dataset to be filled with coadded data.
+    rms: float*
+        Output rms dataset to be filled with coadded data.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    
+    ------------------------------
+    */
+    int prod = n2 * n3;     // Precomputing index factors for flattened index
+    int prod1 = prod * n1;
+    int idx;                    // Index of flattened arrays
+    float inv_var1, inv_var2;   // Inverse variances
+
+    // Looping through 4D datasets and coadding them.
     for(int i=0; i < n0; i++){
         for(int j=0; j < n1; j++){
             for(int k=0; k < n2; k++){
@@ -47,12 +77,42 @@ void coadd5D(float* map1, int* nhit1, float* rms1,
              int n0,      int n1,     int n2, 
              int n3,      int n4                
              ){
-    int prod = n3 * n4;
+    /*
+    Function looping through 5D datasets of two input files and coadding them, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map1: float*
+        First input map dataset.
+    nhit1: int*
+        First input nhit dataset.
+    rms1: float*
+        First input rms dataset.
+    map2: float*
+        Second input map2 dataset.
+    nhit2: int*
+        Second input nhit2 dataset.
+    rms2: float*
+        Second input rms2 dataset.
+    map: float*
+        Output map dataset to be filled with coadded data.
+    nhit: int*
+        Output nhit dataset to be filled with coadded data.
+    rms: float*
+        Output rms dataset to be filled with coadded data.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    
+    ------------------------------
+    */
+    int prod = n3 * n4;     // Precomputing index factors for flattened index
     int prod1 = prod * n2;
     int prod2 =  prod1 * n1;
-    int idx;
-    float inv_var1, inv_var2;
+    int idx;                    // Index of flattened arrays
+    float inv_var1, inv_var2;   // Inverse variances
 
+    // Looping through 5D datasets and coadding them.
     for(int i=0; i < n0; i++){
         for(int j=0; j < n1; j++){
             for(int k=0; k < n2; k++){
@@ -85,13 +145,43 @@ void coadd6D(float* map1, int* nhit1, float* rms1,
              float* map,  int* nhit,  float* rms,
              int n0,      int n1,     int n2, 
              int n3,      int n4,     int n5){
-    int prod = n4 * n5;
+    /*
+    Function looping through 6D datasets of two input files and coadding them, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map1: float*
+        First input map dataset.
+    nhit1: int*
+        First input nhit dataset.
+    rms1: float*
+        First input rms dataset.
+    map2: float*
+        Second input map2 dataset.
+    nhit2: int*
+        Second input nhit2 dataset.
+    rms2: float*
+        Second input rms2 dataset.
+    map: float*
+        Output map dataset to be filled with coadded data.
+    nhit: int*
+        Output nhit dataset to be filled with coadded data.
+    rms: float*
+        Output rms dataset to be filled with coadded data.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    
+    ------------------------------
+    */
+    int prod = n4 * n5;     // Precomputing index factors for flattened index
     int prod1 = prod * n3;
     int prod2 =  prod1 * n2;
     int prod3 =  prod2 * n1;
-    int idx;
-    float inv_var1, inv_var2;
+    int idx;                    // Index of flattened arrays
+    float inv_var1, inv_var2;   // Inverse variances
 
+    // Looping through 6D datasets and coadding them.
     for(int i=0; i < n0; i++){
         for(int j=0; j < n1; j++){
             for(int k=0; k < n2; k++){
@@ -128,11 +218,42 @@ void subtract4D(float* map1, int* nhit1, float* rms1,
                 int n0,      int n1,     int n2, 
                 int n3                
                 ){
-    int prod = n2 * n3;
-    int prod1 = prod * n1;
-    int idx;
-    float var1, var2;
+    /*
+    Function looping through 4D datasets of two input files and subtracting them
+    from each other, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map1: float*
+        First input map dataset.
+    nhit1: int*
+        First input nhit dataset.
+    rms1: float*
+        First input rms dataset.
+    map2: float*
+        Second input map2 dataset.
+    nhit2: int*
+        Second input nhit2 dataset.
+    rms2: float*
+        Second input rms2 dataset.
+    map: float*
+        Output map dataset to be filled with subtraction.
+    nhit: int*
+        Output nhit dataset to be filled with subtraction.
+    rms: float*
+        Output rms dataset to be filled with subtraction.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    
+    ------------------------------
+    */
+    int prod = n2 * n3;     // Precomputing index factors for flattened index
+    int prod1 = prod * n1;
+    int idx;                // Index of flattened arrays
+    float var1, var2;       // Inverse variances
+
+    // Looping through 4D datasets and performing subtractions.
     for(int i=0; i < n0; i++){
         for(int j=0; j < n1; j++){
             for(int k=0; k < n2; k++){
@@ -163,12 +284,43 @@ void subtract5D(float* map1, int* nhit1, float* rms1,
              int n0,      int n1,     int n2, 
              int n3,      int n4                
              ){
-    int prod = n3 * n4;
-    int prod1 = prod * n2;
-    int prod2 =  prod1 * n1;
-    int idx;
-    float var1, var2;
+    /*
+    Function looping through 5D datasets of two input files and subtracting them
+    from each other, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map1: float*
+        First input map dataset.
+    nhit1: int*
+        First input nhit dataset.
+    rms1: float*
+        First input rms dataset.
+    map2: float*
+        Second input map2 dataset.
+    nhit2: int*
+        Second input nhit2 dataset.
+    rms2: float*
+        Second input rms2 dataset.
+    map: float*
+        Output map dataset to be filled with subtraction.
+    nhit: int*
+        Output nhit dataset to be filled with subtraction.
+    rms: float*
+        Output rms dataset to be filled with subtraction.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    
+    ------------------------------
+    */
+    int prod = n3 * n4;     // Precomputing index factors for flattened index
+    int prod1 = prod * n2;  
+    int prod2 =  prod1 * n1;
+    int idx;                // Index of flattened arrays
+    float var1, var2;       // Inverse variances
+
+    // Looping through 5D datasets and performing subtractions.
     for(int i=0; i < n0; i++){
         for(int j=0; j < n1; j++){
             for(int k=0; k < n2; k++){
@@ -200,13 +352,44 @@ void subtract6D(float* map1, int* nhit1, float* rms1,
              float* map,  int* nhit,  float* rms,
              int n0,      int n1,     int n2, 
              int n3,      int n4,     int n5){
-    int prod = n4 * n5;
+    /*
+    Function looping through 5D datasets of two input files and subtracting them
+    from each other, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map1: float*
+        First input map dataset.
+    nhit1: int*
+        First input nhit dataset.
+    rms1: float*
+        First input rms dataset.
+    map2: float*
+        Second input map2 dataset.
+    nhit2: int*
+        Second input nhit2 dataset.
+    rms2: float*
+        Second input rms2 dataset.
+    map: float*
+        Output map dataset to be filled with subtraction.
+    nhit: int*
+        Output nhit dataset to be filled with subtraction.
+    rms: float*
+        Output rms dataset to be filled with subtraction.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    
+    ------------------------------
+    */
+    int prod = n4 * n5;     // Precomputing index factors for flattened index
     int prod1 = prod * n3;
     int prod2 =  prod1 * n2;
     int prod3 =  prod2 * n1;
-    int idx;
-    float var1, var2;
+    int idx;                // Index of flattened arrays
+    float var1, var2;       // Inverse variances
 
+    // Looping through 5D datasets and performing subtractions.
     for(int i=0; i < n0; i++){
         for(int j=0; j < n1; j++){
             for(int k=0; k < n2; k++){
@@ -241,8 +424,36 @@ void dgradeXY4D(float* map_h, int* nhit_h, float* rms_h,
               int n0,       int n1,      int n2, 
               int n3,       int N2,      int N3,       
               int num){
+    /*
+    Function looping through 4D datasets of one input file and transforms the dataset from
+    a high-resolution pixel grid to a low-resolution one, to return the 
+    product by call-by-pointer.
 
-    int p_h = n2 * n3;
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis lenght of each dimension of the new pixel image.
+    num: int
+        Number of pixels to merge along each dimension.
+    
+    ------------------------------
+    */             
+    // Precomputing index factors for flattened indies
+    int p_h = n2 * n3;      
     int p_h1 = p_h * n1;
     int idx_h;
     
@@ -253,6 +464,7 @@ void dgradeXY4D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, a, b;
 
+    // Looping through datasets to co-merge neighboring pixels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(a = 0; a < N2; a++){
@@ -294,6 +506,36 @@ void dgradeXY5D(float* map_h, int* nhit_h, float* rms_h,
               int n0, int n1, int n2,
               int n3, int n4, int N3,
               int N4, int num){
+    /*
+    Function looping through 5D datasets of one input file and transforms the dataset from
+    a high-resolution pixel grid to a low-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis lenght of each dimension of the new pixel image.
+    num: int
+        Number of pixels to merge along each dimension.
+    
+    ------------------------------
+    */  
+
+    // Precomputing index factors for flattened indies
     int p_h = n3 * n4;
     int p_h1 = p_h * n2;
     int p_h2 =  p_h1 * n1;
@@ -307,6 +549,7 @@ void dgradeXY5D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, m, a, b;
 
+    // Looping through datasets to co-merge neighboring pixels.
     for(i=0; i < n0; i++){
         for(j = 0; j < n1; j++){
             for(k=0; k < n2; k++){
@@ -352,6 +595,36 @@ void dgradeXY6D(float* map_h, int* nhit_h, float* rms_h,
               int n0,      int n1,     int n2, 
               int n3,      int n4,     int n5,
               int N4,      int N5,     int num){
+    /*
+    Function looping through 6D datasets of one input file and transforms the dataset from
+    a high-resolution pixel grid to a low-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis lenght of each dimension of the new pixel image.
+    num: int
+        Number of pixels to merge along each dimension.
+    
+    ------------------------------
+    */  
+
+    // Precomputing index factors for flattened indies
     int p_h = n4 * n5;
     int p_h1 = p_h * n3;
     int p_h2 =  p_h1 * n2;
@@ -363,8 +636,11 @@ void dgradeXY6D(float* map_h, int* nhit_h, float* rms_h,
     int p_l2 = p_l1 * n2;
     int p_l3 = p_l2 * n1;
     int idx_l;
+   
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, m, n, a, b;
+    
+    // Looping through datasets to co-merge neighboring pixels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(k=0; k < n2; k++){
@@ -411,7 +687,36 @@ void dgradeZ4D(float* map_h, int* nhit_h, float* rms_h,
                float* map_l, int* nhit_l, float* rms_l,
                int n0,       int n1,      int n2, 
                int n3,       int N1,      int num){
+    /*
+    Function looping through 4D datasets of one input file and transforms the dataset from
+    a high-resolution frequency grid to a low-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis lenght of each dimension of the new length of frequency axis.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+
+    // Precomputing index factors for flattened indies                   
     int p_h = n2 * n3;
     int p_h1 = p_h * n1;
     int idx_h;
@@ -423,6 +728,7 @@ void dgradeZ4D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, a;
 
+    // Looping through datasets to co-merge neighboring channels.
     for(i=0; i < n0; i++){
         for(a = 0; a < N1; a++){
 
@@ -462,6 +768,35 @@ void dgradeZ5D(float* map_h, int* nhit_h, float* rms_h,
                int n0, int n1, int n2,
                int n3, int n4, int N2,
                int num){
+    /*
+    Function looping through 5D datasets of one input file and transforms the dataset from
+    a high-resolution frequency grid to a low-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis lenght of each dimension of the new length of frequency axis.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies                   
     int p_h = n3 * n4;
     int p_h1 = p_h * n2;
     int p_h2 =  p_h1 * n1;
@@ -475,6 +810,7 @@ void dgradeZ5D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, m, a;
 
+    // Looping through datasets to co-merge neighboring channels.
     for(i=0; i < n0; i++){
         for(j = 0; j < n1; j++){
             for(a = 0; a < N2; a++){
@@ -517,7 +853,35 @@ void dgradeZ6D(float* map_h, int* nhit_h, float* rms_h,
                int n0,       int n1,     int n2, 
                int n3,       int n4,     int n5,
                int N3,       int num){
+    /*
+    Function looping through 6D datasets of one input file and transforms the dataset from
+    a high-resolution frequency grid to a low-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis lenght of each dimension of the new length of frequency axis.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies
     int p_h = n4 * n5;
     int p_h1 = p_h * n3;
     int p_h2 =  p_h1 * n2;
@@ -533,6 +897,7 @@ void dgradeZ6D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, m, n, a;
 
+    // Looping through datasets to co-merge neighboring channels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(k=0; k < n2; k++){
@@ -577,7 +942,36 @@ void dgradeXYZ4D(float* map_h, int* nhit_h, float* rms_h,
                  int n0,       int n1,      int n2, 
                  int n3,       int N1,      int N2,       
                  int N3,       int numZ,    int numXY){
+    /*
+    Function looping through 4D datasets of one input file and transforms the dataset from
+    a high-resolution pixel-frequency grid to a low-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel and frequency axes.
+    numZ: int
+        Number of channels to split into along each dimension.
+    numXY: int
+        Number of pixels to split into along each dimension.
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies
     int p_h = n2 * n3;
     int p_h1 = p_h * n1;
     int idx_h;
@@ -589,6 +983,7 @@ void dgradeXYZ4D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, x, y, z;
 
+    // Looping through datasets to co-merge neighboring pixels and channels.
     for(i=0; i < n0; i++){
         for(z = 0; z < N1; z++){
             for(x = 0; x < N2; x++){
@@ -634,7 +1029,37 @@ void dgradeXYZ5D(float* map_h, int* nhit_h, float* rms_h,
                  int n3,       int n4,      int N2,       
                  int N3,       int N4,      int numZ,     
                  int numXY){
+    /*
+    Function looping through 5D datasets of one input file and transforms the dataset from
+    a high-resolution pixel-frequency grid to a low-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel and frequency axes.
+    numZ: int
+        Number of channels to split into along each dimension.
+    numXY: int
+        Number of pixels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies                 
     int p_h = n3 * n4;
     int p_h1 = p_h * n2;
     int p_h2 =  p_h1 * n1;
@@ -648,6 +1073,7 @@ void dgradeXYZ5D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, m, x, y, z;
 
+    // Looping through datasets to co-merge neighboring pixels and channels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(z = 0; z < N2; z++){
@@ -695,7 +1121,37 @@ void dgradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
                  int n3,       int n4,      int n5,
                  int N3,       int N4,      int N5, 
                  int numZ,     int numXY){
+    /*
+    Function looping through 6D datasets of one input file and transforms the dataset from
+    a high-resolution pixel-frequency grid to a low-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Input map high-resolution dataset.
+    nhit_h: int*
+        Input nhit high-resolution dataset.
+    rms_h: float*
+        Input rms high-resolution dataset.
+    map_l: float*
+        Output map low-resolution dataset.
+    nhit_l: int*
+        Output nhit low-resolution dataset.
+    rms_l: float*
+        Output rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel and frequency axes.
+    numZ: int
+        Number of channels to split into along each dimension.
+    numXY: int
+        Number of pixels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies                 
     int p_h = n4 * n5;
     int p_h1 = p_h * n3;
     int p_h2 =  p_h1 * n2;
@@ -711,6 +1167,7 @@ void dgradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
     float inv_var1, inv_var1_sum;
     int i, j, k ,l, m, n, x, y, z;
 
+    // Looping through datasets to co-merge neighboring pixels and channels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(k=0; k < n2; k++){
@@ -757,10 +1214,40 @@ void dgradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
 
 
 // Upgrade functions on pixel level
-void ugradeXY4D_float(float* data_h,  float* data_l,   int n0,       
-                int n1,         int n2,          int n3,       
-                int N2,         int N3,          int num){
-                        
+void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h, 
+                float* map_l, int* nhit_l, float* rms_l,
+                int n0,       int n1,      int n2, 
+                int n3,       int N2,      int N3,       
+                int num){
+    /*
+    Function looping through 4D datasets of one input file and transforms the dataset from
+    a low-resolution pixel grid to a high-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel axes.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies                    
     int p_h = N2 * N3;
     int p_h1 = p_h * n1;
     int idx_h;
@@ -770,7 +1257,8 @@ void ugradeXY4D_float(float* data_h,  float* data_l,   int n0,
     int idx_l;
 
     int i, j, k ,l, a, b;
-
+    
+    // Looping through datasets to transform each pixel into a grid of sub-pixels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(a = 0; a < n2; a++){
@@ -789,10 +1277,40 @@ void ugradeXY4D_float(float* data_h,  float* data_l,   int n0,
     }
 }
 
-void ugradeXY5D_float(float* data_h,  float* data_l,  int n0, 
-                int n1,         int n2,         int n3, 
-                int n4,         int N3,         int N4, 
-                int num){
+void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h, 
+                float* map_l, int* nhit_l, float* rms_l,
+                int n0, int n1, int n2,
+                int n3, int n4, int N3,
+                int N4, int num){
+    /*
+    Function looping through 5D datasets of one input file and transforms the dataset from
+    a low-resolution pixel grid to a high-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel axes.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies    
     int p_h = N3 * N4;
     int p_h1 = p_h * n2;
     int p_h2 =  p_h1 * n1;
@@ -805,6 +1323,7 @@ void ugradeXY5D_float(float* data_h,  float* data_l,  int n0,
 
     int i, j, k ,l, m, a, b;
 
+    // Looping through datasets to transform each pixel into a grid of sub-pixels.
     for(i=0; i < n0; i++){
         for(j = 0; j < n1; j++){
             for(k=0; k < n2; k++){
@@ -825,10 +1344,41 @@ void ugradeXY5D_float(float* data_h,  float* data_l,  int n0,
     }
 }
 
-void ugradeXY6D_float(float* data_h, float* data_l,  int n0,      
-                int n1,       int n2,       int n3,      
-                int n4,       int n5,       int N4,      
-                int N5,       int num){
+void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h, 
+                float* map_l,  int* nhit_l,  float* rms_l,
+                int n0,      int n1,     int n2, 
+                int n3,      int n4,     int n5,
+                int N4,      int N5,     int num){
+    
+    /*
+    Function looping through 6D datasets of one input file and transforms the dataset from
+    a low-resolution pixel grid to a high-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel axes.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies 
     int p_h = N4 * N5;
     int p_h1 = p_h * n3;
     int p_h2 =  p_h1 * n2;
@@ -843,6 +1393,7 @@ void ugradeXY6D_float(float* data_h, float* data_l,  int n0,
 
     int i, j, k ,l, m, n, a, b;
 
+    // Looping through datasets to transform each pixel into a grid of sub-pixels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(k=0; k < n2; k++){
@@ -867,10 +1418,39 @@ void ugradeXY6D_float(float* data_h, float* data_l,  int n0,
 }
 
 // Upgrading functions on frequency channel level
-void ugradeZ4D_float(float* data_h,   float* data_l,    int n0,       
-               int n1,          int n2,         int n3,       
-               int N1,          int num){
+void ugradeZ4D(float* map_h, int* nhit_h, float* rms_h, 
+               float* map_l, int* nhit_l, float* rms_l,
+               int n0,       int n1,      int n2, 
+               int n3,       int N1,      int num){
+    /*
+    Function looping through 4D datasets of one input file and transforms the dataset from
+    a low-resolution frequency grid to a high-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel axes.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies
     int p_h = n2 * n3;
     int p_h1 = p_h * N1;
     int idx_h;
@@ -880,7 +1460,8 @@ void ugradeZ4D_float(float* data_h,   float* data_l,    int n0,
     int idx_l;
 
     int i, j, k ,l, a;
-
+    
+    // Looping through datasets to transform each frequency into a number of sub-channels.
     for(i=0; i < n0; i++){
         for(a = 0; a < n1; a++){
             for(k = 0; k < n2; k++){
@@ -896,10 +1477,40 @@ void ugradeZ4D_float(float* data_h,   float* data_l,    int n0,
     }
 }
 
-void ugradeZ5D_float(float* data_h,   float* data_l,    int n0, 
-               int n1,          int n2,         int n3, 
-               int n4,          int N2,         int num){
+void ugradeZ5D(float* map_h, int* nhit_h, float* rms_h, 
+               float* map_l, int* nhit_l, float* rms_l,
+               int n0, int n1, int n2,
+               int n3, int n4, int N2,
+               int num){
+    /*
+    Function looping through 5D datasets of one input file and transforms the dataset from
+    a low-resolution frequency grid to a high-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel axes.
+    num: int
+        Number of channels to split into along each dimension.
     
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies
     int p_h = n3 * n4;
     int p_h1 = p_h * N2;
     int p_h2 =  p_h1 * n1;
@@ -912,6 +1523,7 @@ void ugradeZ5D_float(float* data_h,   float* data_l,    int n0,
 
     int i, j, k ,l, m, a;
 
+    // Looping through datasets to transform each frequency into a number of sub-channels.
     for(i=0; i < n0; i++){
         for(j = 0; j < n1; j++){
             for(a = 0; a < n2; a++){
@@ -929,11 +1541,40 @@ void ugradeZ5D_float(float* data_h,   float* data_l,    int n0,
     }
 }
 
-void ugradeZ6D_float(float* data_h,   float* data_l,    int n0,       
-               int n1,          int n2,         int n3,       
-               int n4,          int n5,         int N3,       
-               int num){
+void ugradeZ6D(float* map_h, int* nhit_h, float* rms_h, 
+               float* map_l, int* nhit_l,  float* rms_l,
+               int n0,       int n1,     int n2, 
+               int n3,       int n4,     int n5,
+               int N3,       int num){
+    /*
+    Function looping through 6D datasets of one input file and transforms the dataset from
+    a low-resolution frequency grid to a high-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel axes.
+    num: int
+        Number of channels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies               
     int p_h = n4 * n5;
     int p_h1 = p_h * N3;
     int p_h2 =  p_h1 * n2;
@@ -948,6 +1589,7 @@ void ugradeZ6D_float(float* data_h,   float* data_l,    int n0,
 
     int i, j, k ,l, m, n, a;
 
+    // Looping through datasets to transform each frequency into a number of sub-channels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(k=0; k < n2; k++){
@@ -968,11 +1610,42 @@ void ugradeZ6D_float(float* data_h,   float* data_l,    int n0,
 }
 
 // Upgrading functions on pixel and frequency channel level
-void ugradeXYZ4D_float(float* data_h,     float* data_l,    int n0,       
-                 int n1,            int n2,         int n3,       
-                 int N1,            int N2,         int N3,       
-                 int numZ,          int numXY){
+void ugradeXYZ4D(float* map_h, int* nhit_h, float* rms_h, 
+                 float* map_l, int* nhit_l, float* rms_l,
+                 int n0,       int n1,      int n2, 
+                 int n3,       int N1,      int N2,       
+                 int N3,       int numZ,    int numXY){
+    /*
+    Function looping through 5D datasets of one input file and transforms the dataset from
+    a low-resolution pixel-frequency grid to a high-resolution one, to return the 
+    product by call-by-pointer.
 
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel and frequency axes.
+    numZ: int
+        Number of channels to split into along each dimension.
+    numXY: int
+        Number of pixels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies                
     int p_h = N2 * N3;
     int p_h1 = p_h * N1;
     int idx_h;
@@ -983,6 +1656,7 @@ void ugradeXYZ4D_float(float* data_h,     float* data_l,    int n0,
 
     int i, j, k ,l, x, y, z;
 
+    // Looping through datasets to transform each pixel-frequency cube into a number of sub-cubes.
     for(i=0; i < n0; i++){
         for(z = 0; z < n1; z++){
             for(x = 0; x < n2; x++){
@@ -1045,82 +1719,37 @@ void ugradeXYZ6D_float(float* data_h,     float* data_l,    int n0,
                  int n4,            int n5,         int N3,       
                  int N4,            int N5,         int numZ,     
                  int numXY){
-    int p_h = N4 * N5;
-    int p_h1 = p_h * N3;
-    int p_h2 =  p_h1 * n2;
-    int p_h3 =  p_h2 * n1;
-    int idx_h;
+    /*
+    Function looping through 5D datasets of one input file and transforms the dataset from
+    a low-resolution pixel-frequency grid to a high-resolution one, to return the 
+    product by call-by-pointer.
 
-    int p_l = n4 * n5;
-    int p_l1 = p_l * n3;
-    int p_l2 = p_l1 * n2;
-    int p_l3 = p_l2 * n1;
-    int idx_l;
-
-    int i, j, k ,l, m, n, x, y, z;
-
-    for(i=0; i < n0; i++){
-        for(j=0; j < n1; j++){
-            for(k=0; k < n2; k++){
-                for(z = 0; z < n3; z++){    
-                    for(x = 0; x < n4; x++){
-                        for(y = 0; y < n5; y++){
-                            for(l = z * numZ; l < (z + 1) * numZ; l++){
-                                for(m = x * numXY; m < (x + 1) * numXY; m++){
-                                    for(n = y * numXY; n < (y + 1) * numXY; n++){
-                                        idx_l = p_l3 * i + p_l2 * j + p_l1 * k + p_l * z + n5 * x + y;
-                                        idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
-                                        data_h[idx_h]    = data_l[idx_l];       
-                                    }
-                                }
-                            }
-                        }        
-                    }
-                }
-            }
-        }
-    }   
-}
-
-
-
-// Upgrade functions on pixel level
-void ugradeXY4D_int(int* data_h,  int* data_l,   int n0,       
-                int n1,         int n2,          int n3,       
-                int N2,         int N3,          int num){
-                        
-    int p_h = N2 * N3;
-    int p_h1 = p_h * n1;
-    int idx_h;
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel and frequency axes.
+    numZ: int
+        Number of channels to split into along each dimension.
+    numXY: int
+        Number of pixels to split into along each dimension.
     
-    int p_l = n2 * n3;
-    int p_l1 = p_l * n1;
-    int idx_l;
-
-    int i, j, k ,l, a, b;
-
-    for(i=0; i < n0; i++){
-        for(j=0; j < n1; j++){
-            for(a = 0; a < n2; a++){
-                for(b = 0; b < n3; b++){
-                    idx_l = p_l1 * i + p_l * j + n3 * a + b;
-                    
-                    for(k = a * num; k < (a + 1) * num; k++){
-                        for(l = b * num; l < (b + 1) * num; l++){
-                            idx_h           = p_h1 * i + p_h * j + N3 * k + l;
-                            data_h[idx_h]   = data_l[idx_l];             
-                        }
-                    }
-                }      
-            }
-        }
-    }
-}
-
-void ugradeXY5D_int(int* data_h,  int* data_l,  int n0, 
-                int n1,         int n2,         int n3, 
-                int n4,         int N3,         int N4, 
-                int num){
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies                 
     int p_h = N3 * N4;
     int p_h1 = p_h * n2;
     int p_h2 =  p_h1 * n1;
@@ -1347,6 +1976,7 @@ void ugradeXYZ5D_int(int* data_h,     int* data_l,    int n0,
 
     int i, j, k ,l, m, x, y, z;
     
+    // Looping through datasets to transform each pixel-frequency cube into a number of sub-cubes.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(z = 0; z < n2; z++){
@@ -1368,11 +1998,43 @@ void ugradeXYZ5D_int(int* data_h,     int* data_l,    int n0,
     }   
 }
 
-void ugradeXYZ6D_int(int* data_h,     int* data_l,    int n0,       
-                 int n1,            int n2,         int n3,       
-                 int n4,            int n5,         int N3,       
-                 int N4,            int N5,         int numZ,     
-                 int numXY){
+void ugradeXYZ6D(float* map_h, int* nhit_h, float* rms_h, 
+                 float* map_l, int* nhit_l, float* rms_l,
+                 int n0,       int n1,      int n2, 
+                 int n3,       int n4,      int n5,
+                 int N3,       int N4,      int N5, 
+                 int numZ,     int numXY){
+    /*
+    Function looping through 6D datasets of one input file and transforms the dataset from
+    a low-resolution pixel-frequency grid to a high-resolution one, to return the 
+    product by call-by-pointer.
+
+    Parameters
+    ------------------------------
+    map_h: float*
+        Output map high-resolution dataset.
+    nhit_h: int*
+        Output nhit high-resolution dataset.
+    rms_h: float*
+        Output rms high-resolution dataset.
+    map_l: float*
+        Input map low-resolution dataset.
+    nhit_l: int*
+        Input nhit low-resolution dataset.
+    rms_l: float*
+        Input rms low-resolution dataset.
+    ni: int
+        Axis length of each dimension of the input data hyper-cubes.
+    Ni: int
+        Axis length of each dimension of the new length of pixel and frequency axes.
+    numZ: int
+        Number of channels to split into along each dimension.
+    numXY: int
+        Number of pixels to split into along each dimension.
+    
+    ------------------------------
+    */  
+    // Precomputing index factors for flattened indies
     int p_h = N4 * N5;
     int p_h1 = p_h * N3;
     int p_h2 =  p_h1 * n2;
@@ -1386,7 +2048,8 @@ void ugradeXYZ6D_int(int* data_h,     int* data_l,    int n0,
     int idx_l;
 
     int i, j, k ,l, m, n, x, y, z;
-
+    
+    // Looping through datasets to transform each pixel-frequency cube into a number of sub-cubes.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
             for(k=0; k < n2; k++){
