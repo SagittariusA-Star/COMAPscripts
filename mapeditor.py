@@ -17,8 +17,9 @@ class Atlas:
                                                                 #true if jackknife command line input is given.
 
         self.tool_choices   = ["coadd", "subtract", "dgradeXY", "dgradeZ", "dgradeXYZ",
-                                                    "ugradeXY", "ugradeZ", "ugradeXYZ"]     # Tool choices.
-        self.tool           = "coadd"               # Default tool is coadd.
+                                                    "ugradeXY", "ugradeZ", "ugradeXYZ",
+                                                    "smoothXY", "smoothZ", "smoothXYZ"]     # Tool choices.
+        self.tool         = "coadd"               # Default tool is coadd.
         self.det_list     = np.arange(1,20)         # List of detectors to use, default all.
         self.sb_list      = np.arange(1,5)          # List of sidebands to use, default all.
         self.freq_list    = np.arange(1,65)         # List of frequency channels per sideband, default all.
@@ -31,6 +32,7 @@ class Atlas:
         self.patch2       = ''      # Patch name of second infile.
         self.infile1      = None    # Fist infile name.
         self.infile2      = None    # Second infile name.
+        #self.maputilslib = ctypes.cdll.LoadLibrary("/mn/stornext/d16/cmbco/comap/protodir/auxiliary/maputilslib.so.1")  # Load shared C utils library.
         self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
 
         self.input()    # Calling the input function to set variables dependent on command line input.
