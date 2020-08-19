@@ -1839,7 +1839,7 @@ class Atlas:
     def gaussian_kernelZ(self):
         size_z = int(self.n_sigma * self.sigmaZ)
         print(np.arange(-size_z, size_z + 1))
-        g = np.exp(-(z**2 / (2. * self.sigmaZ ** 2))
+        g = np.exp(-(z**2 / (2. * self.sigmaZ ** 2)))
         return g / g.sum()
 
     def gaussian_smoothXY(self, map, nhit, rms):
@@ -1874,6 +1874,7 @@ class Atlas:
         
         if len(map.shape) == 4:
             n0, n1, n2, n3 = map.shape
+            
             map = map.reshape(n0 * n1, n2, n3)
             nhit = nhit.reshape(n0 * n1, n2, n3)
             rms = rms.reshape(n0 * n1, n2, n3)
@@ -1885,10 +1886,16 @@ class Atlas:
             self.rms    = signal.fftconvolve(rms,   kernel[np.newaxis, :, :], 
                                             mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
 
+            self.map = map.reshape(n0 * n1, n2, n3)
+            nhit = nhit.reshape(n0 * n1, n2, n3)
+            rms = rms.reshape(n0 * n1, n2, n3)
+            
+
         elif len(map.shape) == 5:
-            map = map.reshape(map.shape[0], map.shape[1] * map.shape[2], map.shape[3], map.shape[4])
-            nhit = nhit.reshape(nhit.shape[0], nhit.shape[1] * nhit.shape[2], nhit.shape[3], nhit.shape[4])
-            rms = rms.reshape(rms.shape[0], rms.shape[1] * rms.shape[2], rms.shape[3], rms.shape[4])
+            n0, n1, n2, n3, n4 = map.shape
+            map = map.reshape(n0, n1 * n2, n3, n4)
+            nhit = nhit.reshape(n0, n1 * n2, n3, n4)
+            rms = rms.reshape(n0, n1 * n2, n3, n4)
             
             self.map    = signal.fftconvolve(map,  kernel[np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = [len(map.shape)-2,  len(map.shape) - 1])
@@ -1898,9 +1905,10 @@ class Atlas:
                                             mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
 
         elif len(map.shape) == 6:
-            map = map.reshape(map.shape[0], map.shape[1], map.shape[2] * map.shape[3], map.shape[4], map.shape[5])
-            nhit = nhit.reshape(nhit.shape[0], nhit.shape[1], nhit.shape[2] * nhit.shape[3], nhit.shape[4], nhit.shape[5])
-            rms = rms.reshape(rms.shape[0], rms.shape[1], rms.shape[2] * rms.shape[3], rms.shape[4], rms.shape[5])
+            n0, n1, n2, n3, n4, n5 = map.shape
+            map = map.reshape(n0, n1, n2 * n3, n4, n5)
+            nhit = nhit.reshape(n0, n1, n2 * n3, n4, n5)
+            rms = rms.reshape(n0, n1, n2 * n3, n4, n5)
             
             self.map    = signal.fftconvolve(map, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = [len(map.shape)-2, len(map.shape) - 1])
