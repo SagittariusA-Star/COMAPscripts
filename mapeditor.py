@@ -2,9 +2,12 @@ import time
 import sys
 import getopt
 import numpy as np
+import scipy
+from scipy import signal
 import h5py as h5
 import textwrap
 import ctypes
+import matplotlib.pyplot as plt
 
 class Atlas:
     def __init__(self):
@@ -92,7 +95,9 @@ class Atlas:
                 conditionXY   = "dgradeXY" in arg.split(",") or "ugradeXY" in arg.split(",")
                 conditionZ    = "dgradeZ" in arg.split(",") or "ugradeZ" in arg.split(",")
                 conditionXYZ  = "dgradeXYZ" in arg.split(",") or "ugradeXYZ" in arg.split(",")
-                
+
+                smoothXY    = "smoothXY" in arg.split(",")
+
                 if "coadd" in arg or "subtract" in arg:
                     if self.infile1 != None and self.infile2 == None:
                         print("To perform a coadd or subtraction two input files must be given!")
@@ -174,13 +179,28 @@ class Atlas:
                     """
                     print(textwrap.dedent(message))
                     sys.exit()
+                
+                elif smoothXY and len(arg.split(",")) == 4:
+                    if self.infile1 != None and self.infile2 != None:
+                        print("Gaussian smoothing is only supported for single input file!")
+                        sys.exit()
+                    self.tool, self.sigmaX, self.sigmaY, self.n_sigma = arg.split(",")
+                    self.sigmaX, self.sigmaY, self.n_sigma = float(self.sigmaX), float(self.sigmaY), int(self.n_sigma)
+                
+                elif smoothXY and len(arg.split(",")) != 4:
+                    message = """
+                    To use the smooothing tool please provide a sigmaX, sigmaY and n_sigma; e.g. -t smoothXY,10,10,5 (don't forget the commas!!)!
+                    """
+                    print(textwrap.dedent(message))
+                    sys.exit()
+
                 else:
                     self.tool = arg
                 
                 if self.tool not in self.tool_choices:
                     print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
-            
+
             elif opt in ("-b", "--beam"):
                 """If beam is chosen, subsequent operations are only performed on _beam datasets"""
                 self.beam = True
@@ -644,7 +664,7 @@ class Atlas:
                 elif self.tool == "subtract": 
                     self.C_subtract4D(self.map1, self.nhit1, self.rms1,
                                       self.map2, self.nhit2, self.rms2)  
-                        
+
                 self.writeMap()
                 self.full = _full
             self.writeMap(write_the_rest = True)
@@ -696,6 +716,9 @@ class Atlas:
                             
                             elif len(self.map1.shape) == 5:
                                 self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
+                        
+                        elif self.tool == "smoothXY":
+                            self.gaussian_smoothXY(self.map1, self.nhit1, self.rms1)
                             
                         self.writeMap(jack)
 
@@ -719,6 +742,9 @@ class Atlas:
                 
                 elif self.tool == "ugradeXYZ":
                     self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
+                
+                elif self.tool == "smoothXY":
+                    self.gaussian_smoothXY(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
 
@@ -744,6 +770,9 @@ class Atlas:
 
                 elif self.tool == "ugradeXYZ":
                     self.C_ugradeXYZ4D(self.map1, self.nhit1, self.rms1)
+
+                elif self.tool == "smoothXY":
+                    self.gaussian_smoothXY(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = False
@@ -792,7 +821,21 @@ class Atlas:
                         
                         elif len(self.map1.shape) == 5:
                             self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
-                            
+                    
+                    elif self.tool == "smoothXY":
+                        self.gaussian_smoothXY(self.map1, self.nhit1, self.rms1)
+                    print(np.array(self.dfile1["freq"]).reshape(4*64))
+                    fig, ax = plt.subplots(1, 2)
+                    im0 = ax[0].imshow(np.sum(self.nhit1[1, :, 0, 0, :, :], axis = 0).T)
+                    ax[0].set_title("Test map")
+                    im1 = ax[1].imshow(np.sum(self.nhit[1, :, 0, 0, :, :], axis = 0).T)
+                    ax[1].set_title("Smoothed")
+                    fig.colorbar(im0, ax = ax[0], orientation = "horizontal")
+                    fig.colorbar(im1, ax = ax[1], orientation = "horizontal")
+                    plt.savefig("test_smoothed_map.png")
+                    plt.show()
+
+
                     self.writeMap(jack)
 
             if self.full:
@@ -817,7 +860,10 @@ class Atlas:
                 
                 elif self.tool == "ugradeXYZ":
                     self.C_ugradeXYZ5D(self.map1, self.nhit1, self.rms1)
-            
+                
+                elif self.tool == "smoothXY":
+                    self.gaussian_smoothXY(self.map1, self.nhit1, self.rms1)
+
                 self.writeMap()
                 self.beam = _beam
         
@@ -844,9 +890,15 @@ class Atlas:
                 elif self.tool == "ugradeXYZ":
                     self.C_ugradeXYZ4D(self.map1, self.nhit1, self.rms1)
 
+                elif self.tool == "smoothXY":
+                    print("hei smooth")
+                    self.gaussian_smoothXY(self.map1, self.nhit1, self.rms1)
+
                 self.writeMap()
                 self.full = _full
             self.writeMap(write_the_rest = True)            
+
+
 
     def C_coadd4D(self, map1, nhit1, rms1,
                         map2, nhit2, rms2):
@@ -1774,6 +1826,89 @@ class Atlas:
                                      n3,               n4,             n5, 
                                      N3,               N4,             N5,
                                      self.merge_numZ,  self.merge_numXY)
+
+
+
+    def gaussian_kernelXY(self):
+        size_y = int(self.n_sigma * self.sigmaY)
+        size_x = int(self.n_sigma * self.sigmaX)
+        x, y = scipy.mgrid[-size_x:size_x + 1, -size_y:size_y + 1]
+        g = np.exp(-(x**2 / (2. * self.sigmaX**2) + y**2 / (2. * self.sigmaY**2)))
+        return g / g.sum()
+    
+    def gaussian_kernelZ(self):
+        size_z = int(self.n_sigma * self.sigmaZ)
+        print(np.arange(-size_z, size_z + 1))
+        g = np.exp(-(z**2 / (2. * self.sigmaZ ** 2))
+        return g / g.sum()
+
+    def gaussian_smoothXY(self, map, nhit, rms):
+        kernel = self.gaussian_kernelXY()
+        
+        if len(map.shape) == 4:
+            self.map    = signal.fftconvolve(map,   kernel[np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(map.shape)-2,  len(map.shape) - 1])
+            self.nhit   = signal.fftconvolve(nhit,  kernel[np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+            self.rms    = signal.fftconvolve(rms,   kernel[np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
+
+        elif len(map.shape) == 5:
+            self.map    = signal.fftconvolve(map,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(map.shape)-2,  len(map.shape) - 1])
+            self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+            self.rms    = signal.fftconvolve(rms,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
+
+        elif len(map.shape) == 6:
+            self.map    = signal.fftconvolve(map, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(map.shape)-2, len(map.shape) - 1])
+            self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+            self.rms    = signal.fftconvolve(rms, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(rms.shape)-2, len(rms.shape) - 1])
+
+    def gaussian_smoothZ(self, map, nhit, rms):
+        kernel = self.gaussian_kernelZ()
+        
+        if len(map.shape) == 4:
+            n0, n1, n2, n3 = map.shape
+            map = map.reshape(n0 * n1, n2, n3)
+            nhit = nhit.reshape(n0 * n1, n2, n3)
+            rms = rms.reshape(n0 * n1, n2, n3)
+            
+            self.map    = signal.fftconvolve(map,   kernel[np.newaxis, :, :], 
+                                            mode='same', axes = [len(map.shape)-2,  len(map.shape) - 1])
+            self.nhit   = signal.fftconvolve(nhit,  kernel[np.newaxis, :, :], 
+                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+            self.rms    = signal.fftconvolve(rms,   kernel[np.newaxis, :, :], 
+                                            mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
+
+        elif len(map.shape) == 5:
+            map = map.reshape(map.shape[0], map.shape[1] * map.shape[2], map.shape[3], map.shape[4])
+            nhit = nhit.reshape(nhit.shape[0], nhit.shape[1] * nhit.shape[2], nhit.shape[3], nhit.shape[4])
+            rms = rms.reshape(rms.shape[0], rms.shape[1] * rms.shape[2], rms.shape[3], rms.shape[4])
+            
+            self.map    = signal.fftconvolve(map,  kernel[np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(map.shape)-2,  len(map.shape) - 1])
+            self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+            self.rms    = signal.fftconvolve(rms,  kernel[np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
+
+        elif len(map.shape) == 6:
+            map = map.reshape(map.shape[0], map.shape[1], map.shape[2] * map.shape[3], map.shape[4], map.shape[5])
+            nhit = nhit.reshape(nhit.shape[0], nhit.shape[1], nhit.shape[2] * nhit.shape[3], nhit.shape[4], nhit.shape[5])
+            rms = rms.reshape(rms.shape[0], rms.shape[1], rms.shape[2] * rms.shape[3], rms.shape[4], rms.shape[5])
+            
+            self.map    = signal.fftconvolve(map, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(map.shape)-2, len(map.shape) - 1])
+            self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+            self.rms    = signal.fftconvolve(rms, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+                                            mode='same', axes = [len(rms.shape)-2, len(rms.shape) - 1])
+
 
 if __name__ == "__main__":
     t = time.time()
