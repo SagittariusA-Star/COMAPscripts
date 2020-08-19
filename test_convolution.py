@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 
 np.random.seed(123345)
 
-a = np.random.randint(0, 9, (10, 10, 10, 101, 101))
-a[:, :, :, 50, :] = np.linspace(0, 50, 101)
-a[:, :, :, :, 50] = np.linspace(0, -50, 101)
-a[:, :, :, :, 75] = 50 * np.sin(np.linspace(0, -50, 101))
+a = np.random.randint(0, 9, (10, 10, 10, 201, 201))
+a[:, :, :, 50, :] = np.linspace(0, 50, 201)
+a[:, :, :, :, 50] = np.linspace(0, -50, 201)
+a[:, :, :, :, 75] = 50 * np.sin(np.linspace(0, -50, 201))
 
-a = a.reshape(10, 10 * 10, 101, 101)
+a = a.reshape(10, 10 * 10, 201, 201)
 
 def gaussian_kernel(sigma_x, sigma_y, n_sigma=5.0):
     size_y = int(n_sigma * sigma_y)
@@ -25,12 +25,24 @@ def gaussian_kernel(sigma_x, sigma_y, n_sigma=5.0):
 
 def gaussian_smooth(mymap, sigma_x, sigma_y, n_sigma=5.0):
     kernel = gaussian_kernel(sigma_x, sigma_y, n_sigma=n_sigma)
-    smoothed_map = signal.fftconvolve(mymap, kernel[np.newaxis, np.newaxis, :, :], mode='same', axes = None)
+    smoothed_map = signal.fftconvolve(mymap, kernel[np.newaxis, np.newaxis, :, :], mode='same', axes = [len(mymap.shape) - 2, len(mymap.shape) - 1])
+    #[len(mymap.shape)-2, len(mymap.shape) - 1])
+    return smoothed_map
+
+def gaussian_kernelZ(sigma_z, n_sigma):
+        size_z = int(n_sigma * sigma_z)
+        z = np.arange(-size_z, size_z + 1)
+        g = np.exp(-(z**2 / (2. * sigma_z ** 2)))
+        return g / g.sum()
+
+def gaussian_smoothZ(mymap, sigma_z, n_sigma=5.0):
+    kernel = gaussian_kernelZ(sigma_z, n_sigma=n_sigma)
+    smoothed_map = signal.fftconvolve(mymap, kernel[np.newaxis, :, np.newaxis, np.newaxis], mode='same', axes = len(mymap.shape) - 3)
     #[len(mymap.shape)-2, len(mymap.shape) - 1])
     return smoothed_map
 
 
-b = gaussian_smooth(a, 10, 3)
+b = gaussian_smoothZ(a, 3)
 
 fig, ax = plt.subplots(1, 2)
 ax[0].imshow(a[0, :, :, 0].T)
