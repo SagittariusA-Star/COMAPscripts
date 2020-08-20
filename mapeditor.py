@@ -252,8 +252,7 @@ class Atlas:
                 if self.tool not in self.tool_choices:
                     print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
-                print("Through", self.n_sigma)
-                sys.exit()
+                
             elif opt in ("-b", "--beam"):
                 """If beam is chosen, subsequent operations are only performed on _beam datasets"""
                 self.beam = True
@@ -2132,7 +2131,6 @@ class Atlas:
             self.map = self.map.reshape(n0, n1, n2, n3, n4, n5)     # Reshaping back to original [..., sb, channel, ...] format
             self.nhit = self.nhit.reshape(n0, n1, n2, n3, n4, n5)
             self.rms = self.rms.reshape(n0, n1, n2, n3, n4, n5)
-
 
 if __name__ == "__main__":
     t = time.time()
