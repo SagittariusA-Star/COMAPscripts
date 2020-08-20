@@ -1957,30 +1957,30 @@ class Atlas:
 
         kernel = self.gaussian_kernelXY()                   # Computing 2D Gaussian Kernal
         axes   = [len(map.shape)-2,  len(map.shape) - 1]    # Pixel axes of map matrix over which to compute the convolution
-        
+        print(kernel.shape, map.shape)
         """Computing convolution"""
         if len(map.shape) == 4:
-            self.map    = signal.convolve(map,   kernel[np.newaxis, np.newaxis, :, :], 
+            self.map    = signal.oaconvolve(map,   kernel[np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
-            self.nhit   = signal.convolve(nhit,  kernel[np.newaxis, np.newaxis, :, :], 
+            self.nhit   = signal.oaconvolve(nhit,  kernel[np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
-            self.rms    = signal.convolve(rms,   kernel[np.newaxis, np.newaxis, :, :], 
+            self.rms    = signal.oaconvolve(rms,   kernel[np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
 
         elif len(map.shape) == 5:
-            self.map    = signal.convolve(map,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+            self.map    = signal.oaconvolve(map,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
-            self.nhit   = signal.convolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+            self.nhit   = signal.oaconvolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
-            self.rms    = signal.convolve(rms,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
+            self.rms    = signal.oaconvolve(rms,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
 
         elif len(map.shape) == 6:
-            self.map    = signal.convolve(map, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
+            self.map    = signal.oaconvolve(map, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
-            self.nhit   = signal.convolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
+            self.nhit   = signal.oaconvolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
-            self.rms    = signal.convolve(rms, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
+            self.rms    = signal.oaconvolve(rms, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
                                             mode='same', axes = axes)
 
     def gaussian_smoothZ(self, map, nhit, rms):
@@ -2010,11 +2010,11 @@ class Atlas:
             nhit = nhit.reshape(n0 * n1, n2, n3)    # for convolution in frequency direction.
             rms = rms.reshape(n0 * n1, n2, n3)
             
-            self.map    = signal.convolve(map,   kernel[:, np.newaxis, np.newaxis], 
+            self.map    = signal.oaconvolve(map,   kernel[:, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
-            self.nhit   = signal.convolve(nhit,  kernel[:, np.newaxis, np.newaxis], 
+            self.nhit   = signal.oaconvolve(nhit,  kernel[:, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
-            self.rms    = signal.convolve(rms,   kernel[:, np.newaxis, np.newaxis], 
+            self.rms    = signal.oaconvolve(rms,   kernel[:, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
 
             self.map = self.map.reshape(n0, n1, n2, n3)         # Reshaping back to original [..., sb, channel, ...] format
@@ -2027,11 +2027,11 @@ class Atlas:
             nhit = nhit.reshape(n0, n1 * n2, n3, n4)    # for convolution in frequency direction.
             rms = rms.reshape(n0, n1 * n2, n3, n4)
             
-            self.map    = signal.convolve(map,  kernel[np.newaxis, :, np.newaxis,  np.newaxis], 
+            self.map    = signal.oaconvolve(map,  kernel[np.newaxis, :, np.newaxis,  np.newaxis], 
                                             mode='same', axes = axes)
-            self.nhit   = signal.convolve(nhit, kernel[np.newaxis, :, np.newaxis, np.newaxis], 
+            self.nhit   = signal.oaconvolve(nhit, kernel[np.newaxis, :, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
-            self.rms    = signal.convolve(rms,  kernel[np.newaxis, :, np.newaxis, np.newaxis], 
+            self.rms    = signal.oaconvolve(rms,  kernel[np.newaxis, :, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
 
             self.map = self.map.reshape(n0, n1, n2, n3, n4)     # Reshaping back to original [..., sb, channel, ...] format
@@ -2044,11 +2044,11 @@ class Atlas:
             nhit = nhit.reshape(n0, n1, n2 * n3, n4, n5)    # for convolution in frequency direction.
             rms = rms.reshape(n0, n1, n2 * n3, n4, n5)
 
-            self.map    = signal.convolve(map, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
+            self.map    = signal.oaconvolve(map, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
-            self.nhit   = signal.convolve(nhit, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
+            self.nhit   = signal.oaconvolve(nhit, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
-            self.rms    = signal.convolve(rms, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
+            self.rms    = signal.oaconvolve(rms, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
                                             mode='same', axes = axes)
 
             self.map = self.map.reshape(n0, n1, n2, n3, n4, n5)     # Reshaping back to original [..., sb, channel, ...] format
@@ -2083,11 +2083,11 @@ class Atlas:
             nhit = nhit.reshape(n0 * n1, n2, n3)    # for convolution in frequency direction.
             rms = rms.reshape(n0 * n1, n2, n3)
 
-            self.map    = signal.convolve(map,   kernel, mode='same', 
+            self.map    = signal.oaconvolve(map,   kernel, mode='same', 
                                             axes = axes)
-            self.nhit   = signal.convolve(nhit,  kernel, mode='same', 
+            self.nhit   = signal.oaconvolve(nhit,  kernel, mode='same', 
                                             axes = axes)
-            self.rms    = signal.convolve(rms,   kernel, mode='same', 
+            self.rms    = signal.oaconvolve(rms,   kernel, mode='same', 
                                             axes = axes)
 
             self.map = self.map.reshape(n0, n1, n2, n3)     # Reshaping back to original [..., sb, channel, ...] format
@@ -2100,13 +2100,13 @@ class Atlas:
             nhit = nhit.reshape(n0, n1 * n2, n3, n4)    # for convolution in frequency direction.
             rms = rms.reshape(n0, n1 * n2, n3, n4)
             
-            self.map    = signal.convolve(map,  kernel[np.newaxis, :, :, :], 
+            self.map    = signal.oaconvolve(map,  kernel[np.newaxis, :, :, :], 
                                             mode='same', axes = axes) 
                                                                 
-            self.nhit   = signal.convolve(nhit, kernel[np.newaxis, :, :, :], 
+            self.nhit   = signal.oaconvolve(nhit, kernel[np.newaxis, :, :, :], 
                                             mode='same', axes = axes)
 
-            self.rms    = signal.convolve(rms,  kernel[np.newaxis, :, :, :], 
+            self.rms    = signal.oaconvolve(rms,  kernel[np.newaxis, :, :, :], 
                                             mode='same', axes = axes)
 
             self.map = self.map.reshape(n0, n1, n2, n3, n4)     # Reshaping back to original [..., sb, channel, ...] format
@@ -2119,13 +2119,13 @@ class Atlas:
             nhit = nhit.reshape(n0, n1, n2 * n3, n4, n5)    # for convolution in frequency direction.
             rms = rms.reshape(n0, n1, n2 * n3, n4, n5)
             
-            self.map    = signal.convolve(map, kernel[np.newaxis, np.newaxis, :, :, :], 
+            self.map    = signal.oaconvolve(map, kernel[np.newaxis, np.newaxis, :, :, :], 
                                             mode='same', axes = axes)
 
-            self.nhit   = signal.convolve(nhit, kernel[np.newaxis, np.newaxis, :, :, :], 
+            self.nhit   = signal.oaconvolve(nhit, kernel[np.newaxis, np.newaxis, :, :, :], 
                                             mode='same', axes = axes)
 
-            self.rms    = signal.convolve(rms, kernel[np.newaxis, np.newaxis, :, :, :], 
+            self.rms    = signal.oaconvolve(rms, kernel[np.newaxis, np.newaxis, :, :, :], 
                                             mode='same', axes = axes)
 
             self.map = self.map.reshape(n0, n1, n2, n3, n4, n5)     # Reshaping back to original [..., sb, channel, ...] format
