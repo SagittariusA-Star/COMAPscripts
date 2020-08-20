@@ -26,6 +26,7 @@ class Atlas:
         self.sb_list      = np.arange(1,5)          # List of sidebands to use, default all.
         self.freq_list    = np.arange(1,65)         # List of frequency channels per sideband, default all.
         self.outfile      = "outfile.h5"            # Output file name.
+        self.n_sigma      = 5                       # Default n_sigma; used for defining the Gaussian smoothing kernel's grid.
 
         self.beam        = False    # If true subsequent operations are only performed on _beam dataset.
         self.full        = False    # If true subsequent operations are only performed on full dataset.
@@ -66,7 +67,7 @@ class Atlas:
 
     def input(self):
         """
-        Function processing the commapnd line input using getopt.
+        Function processing the command line input using getopt.
         """
 
         if len(sys.argv) == 1:
@@ -97,6 +98,7 @@ class Atlas:
 
                 smoothXY    = "smoothXY" in arg.split(",")
                 smoothZ    = "smoothZ" in arg.split(",")
+                smoothXYZ    = "smoothXYZ" in arg.split(",")
 
                 if "coadd" in arg or "subtract" in arg:
                     if self.infile1 != None and self.infile2 == None:
@@ -180,34 +182,69 @@ class Atlas:
                     print(textwrap.dedent(message))
                     sys.exit()
                 
-                elif smoothXY and len(arg.split(",")) == 4:
+                elif smoothXY and (len(arg.split(",")) == 3 or len(arg.split(",")) == 4):
+                    if len(arg.split(",")) == 3:
+                        self.tool, self.sigmaX, self.sigmaY = arg.split(",")
+                        self.sigmaX, self.sigmaY = float(self.sigmaX), float(self.sigmaY)
+
+                    elif len(arg.split(",")) == 4:
+                        self.tool, self.sigmaX, self.sigmaY, self.n_sigma = arg.split(",")
+                        self.sigmaX, self.sigmaY, self.n_sigma = float(self.sigmaX), float(self.sigmaY), int(self.n_sigma)
+                    
+
                     if self.infile1 != None and self.infile2 != None:
                         print("Gaussian smoothing is only supported for single input file!")
                         sys.exit()
-                    self.tool, self.sigmaX, self.sigmaY, self.n_sigma = arg.split(",")
-                    self.sigmaX, self.sigmaY, self.n_sigma = float(self.sigmaX), float(self.sigmaY), int(self.n_sigma)
-                
-                elif smoothXY and len(arg.split(",")) != 4:
+                    
+                elif smoothXY and (len(arg.split(",")) != 3 or len(arg.split(",")) != 4):
                     message = """
-                    To use the smooothing tool please provide a sigmaX, sigmaY and n_sigma; e.g. -t smoothXY,10,10,5 (don't forget the commas!!)!
+                    To use the smooothing tool please provide a sigmaX, sigmaY and n_sigma; e.g. -t smoothXY,10,10,5  
+                    or -t smoothXY,10,10 [default n_sigma = 5] (don't forget the commas!!)!
                     """
                     print(textwrap.dedent(message))
                     sys.exit()
 
-                elif smoothZ and len(arg.split(",")) == 3:
+                elif smoothZ and (len(arg.split(",")) == 2 or len(arg.split(",")) == 3):
+                    if len(arg.split(",")) == 2:
+                        self.tool, self.sigmaZ = arg.split(",")
+                        self.sigmaZ = float(self.sigmaZ)
+                    
+                    elif len(arg.split(",")) == 3:
+                        self.tool, self.sigmaZ, self.n_sigma = arg.split(",")
+                        self.sigmaZ, self.n_sigma = float(self.sigmaZ), int(self.n_sigma)
+                    
                     if self.infile1 != None and self.infile2 != None:
                         print("Gaussian smoothing is only supported for single input file!")
                         sys.exit()
-                    self.tool, self.sigmaZ, self.n_sigma = arg.split(",")
-                    self.sigmaZ, self.n_sigma = float(self.sigmaZ), int(self.n_sigma)
-                
-                elif smoothZ and len(arg.split(",")) != 3:
+                    
+                elif smoothZ and (len(arg.split(",")) != 2 or len(arg.split(",")) != 3):
                     message = """
-                    To use the smooothing tool please provide a sigmaX, sigmaY and n_sigma; e.g. -t smoothZ,10,5 (don't forget the commas!!)!
+                    To use the smooothing tool please provide a sigmaZ and n_sigma; e.g. -t smoothZ,10,5 
+                    or -t smoothXY,10 [default n_sigma = 5] (don't forget the commas!!)!
                     """
                     print(textwrap.dedent(message))
                     sys.exit()
+                
+                elif smoothXYZ and (len(arg.split(",")) == 4 or len(arg.split(",")) == 5):
+                    if len(arg.split(",")) == 4:
+                        self.tool, self.sigmaX, self.sigmaY, self.sigmaZ = arg.split(",")
+                        self.sigmaX, self.sigmaY, self.sigmaZ = float(self.sigmaX), float(self.sigmaY), float(self.sigmaZ)
 
+                    elif len(arg.split(",")) == 5:
+                        self.tool, self.sigmaX, self.sigmaY, self.sigmaZ, self.n_sigma = arg.split(",")
+                        self.sigmaX, self.sigmaY, self.sigmaZ, self.n_sigma = float(self.sigmaX), float(self.sigmaY), float(self.sigmaZ), int(self.n_sigma)
+                
+                    if self.infile1 != None and self.infile2 != None:
+                        print("Gaussian smoothing is only supported for single input file!")
+                        sys.exit()
+                    
+                elif smoothXYZ and (len(arg.split(",")) != 4 or len(arg.split(",")) != 5):
+                    message = """
+                    To use the smooothing tool please provide a sigmaX, sigmaY, sigmaZ and n_sigma; e.g. -t smoothXYZ,10,10,10,5 
+                    or -t smoothXY,10,10,10 [default n_sigma = 5] (don't forget the commas!!)!
+                    """
+                    print(textwrap.dedent(message))
+                    sys.exit()
 
                 else:
                     self.tool = arg
@@ -215,7 +252,8 @@ class Atlas:
                 if self.tool not in self.tool_choices:
                     print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
-
+                print("Through", self.n_sigma)
+                sys.exit()
             elif opt in ("-b", "--beam"):
                 """If beam is chosen, subsequent operations are only performed on _beam datasets"""
                 self.beam = True
@@ -738,6 +776,9 @@ class Atlas:
                         elif self.tool == "smoothZ":
                             self.gaussian_smoothZ(self.map1, self.nhit1, self.rms1)
 
+                        elif self.tool == "smoothXYZ":
+                            self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
+
                         self.writeMap(jack)
 
                 self.full = True
@@ -767,8 +808,10 @@ class Atlas:
                 elif self.tool == "smoothZ":
                     self.gaussian_smoothZ(self.map1, self.nhit1, self.rms1)
 
-                self.writeMap()
+                elif self.tool == "smoothXYZ":
+                    self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
 
+                self.writeMap()
                 
                 self.full = False
                 self.beam = True
@@ -797,6 +840,9 @@ class Atlas:
 
                 elif self.tool == "smoothZ":
                     self.gaussian_smoothZ(self.map1, self.nhit1, self.rms1)
+
+                elif self.tool == "smoothXYZ":
+                    self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = False
@@ -851,6 +897,9 @@ class Atlas:
                     
                     elif self.tool == "smoothZ":
                         self.gaussian_smoothZ(self.map1, self.nhit1, self.rms1)
+
+                    elif self.tool == "smoothXYZ":
+                        self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
                     
                     self.writeMap(jack)
 
@@ -882,6 +931,9 @@ class Atlas:
 
                 elif self.tool == "smoothZ":
                     self.gaussian_smoothZ(self.map1, self.nhit1, self.rms1)
+
+                elif self.tool == "smoothXYZ":
+                    self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.beam = _beam
@@ -915,15 +967,8 @@ class Atlas:
                 elif self.tool == "smoothZ":
                     self.gaussian_smoothZ(self.map1, self.nhit1, self.rms1)
 
-                fig, ax = plt.subplots(1, 2)
-                im0 = ax[0].imshow(self.nhit1[:, :, :, 60].reshape(4*64,120).T)
-                ax[0].set_title("Test map")
-                im1 = ax[1].imshow(self.nhit[:, :, :, 60].reshape(4*64,120).T)
-                ax[1].set_title("Smoothed")
-                fig.colorbar(im0, ax = ax[0], orientation = "horizontal")
-                fig.colorbar(im1, ax = ax[1], orientation = "horizontal")
-                plt.savefig("test_smoothed_map.png")
-                plt.show()
+                elif self.tool == "smoothXYZ":
+                    self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
 
                 self.writeMap()
                 self.full = _full
@@ -1861,100 +1906,233 @@ class Atlas:
 
 
     def gaussian_kernelXY(self):
+        """
+        Function returning a 2D Gaussian kernal for pixel smoothing.
+        """
+        size_x = int(self.n_sigma * self.sigmaX)                    # Grid boundaries for kernal
         size_y = int(self.n_sigma * self.sigmaY)
-        size_x = int(self.n_sigma * self.sigmaX)
-        x, y = np.mgrid[-size_x:size_x + 1, -size_y:size_y + 1]
-        g = np.exp(-(x**2 / (2. * self.sigmaX**2) + y**2 / (2. * self.sigmaY**2)))
-        return g / g.sum()
+        x, y = np.mgrid[-size_x:size_x + 1, -size_y:size_y + 1]                     # Seting up the kernal's grid
+        g = np.exp(-(x**2 / (2. * self.sigmaX**2) + y**2 / (2. * self.sigmaY**2)))  # Computing the Gaussian Kernal
+        return g / g.sum()                                          
     
     def gaussian_kernelZ(self):
-        size_z = int(self.n_sigma * self.sigmaZ)
-        z = np.arange(-size_z, size_z + 1)
-        g = np.exp(-(z**2 / (2. * self.sigmaZ ** 2)))
+        """
+        Function returning a 1D Gaussian kernal for frequency smoothing.
+        """
+        size_z = int(self.n_sigma * self.sigmaZ)        # Grid bounday for kernal
+        z = np.arange(-size_z, size_z + 1)              # Seting up the kernal's grid
+        g = np.exp(-(z**2 / (2. * self.sigmaZ ** 2)))   # Computing the Gaussian Kernal
         return g / g.sum()
 
-    def gaussian_smoothXY(self, map, nhit, rms):
-        kernel = self.gaussian_kernelXY()
+    def gaussian_kernelXYZ(self):
+        """
+        Function returning a 3D Gaussian kernal for voxel smoothing.
+        """
+        size_x = int(self.n_sigma * self.sigmaX)        # Grid bounday for kernal
+        size_y = int(self.n_sigma * self.sigmaY)
+        size_z = int(self.n_sigma * self.sigmaZ)
+        z, x, y = np.mgrid[ -size_z:size_z + 1, 
+                            -size_x:size_x + 1, 
+                            -size_y:size_y + 1]         # Seting up the kernal's grid
+        g = np.exp(-(x**2 / (2. * self.sigmaX**2) 
+                   + y**2 / (2. * self.sigmaY**2) 
+                   + z**2 / (2. * self.sigmaZ**2)))     # Computing the Gaussian Kernal
+        return g / g.sum()
 
+
+    def gaussian_smoothXY(self, map, nhit, rms):
+        """
+        Function computing a map of smoothed pixels by convolving 
+        the map with a 2D Gaussian Kernal.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 4D, 5D or 6D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D, 5D or 6D array.
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 4D, 5D or 6D array.
+        ------------------------------
+        """
+
+        kernel = self.gaussian_kernelXY()                   # Computing 2D Gaussian Kernal
+        axes   = [len(map.shape)-2,  len(map.shape) - 1]    # Pixel axes of map matrix over which to compute the convolution
+        
+        """Computing convolution"""
         if len(map.shape) == 4:
             self.map    = signal.fftconvolve(map,   kernel[np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(map.shape)-2,  len(map.shape) - 1])
+                                            mode='same', axes = axes)
             self.nhit   = signal.fftconvolve(nhit,  kernel[np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+                                            mode='same', axes = axes)
             self.rms    = signal.fftconvolve(rms,   kernel[np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
+                                            mode='same', axes = axes)
 
         elif len(map.shape) == 5:
             self.map    = signal.fftconvolve(map,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(map.shape)-2,  len(map.shape) - 1])
+                                            mode='same', axes = axes)
             self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+                                            mode='same', axes = axes)
             self.rms    = signal.fftconvolve(rms,  kernel[np.newaxis, np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(rms.shape)-2,  len(rms.shape) - 1])
+                                            mode='same', axes = axes)
 
         elif len(map.shape) == 6:
             self.map    = signal.fftconvolve(map, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(map.shape)-2, len(map.shape) - 1])
+                                            mode='same', axes = axes)
             self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(nhit.shape)-2, len(nhit.shape) - 1])
+                                            mode='same', axes = axes)
             self.rms    = signal.fftconvolve(rms, kernel[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :, :], 
-                                            mode='same', axes = [len(rms.shape)-2, len(rms.shape) - 1])
+                                            mode='same', axes = axes)
 
     def gaussian_smoothZ(self, map, nhit, rms):
-        kernel = self.gaussian_kernelZ()
-        
+        """
+        Function computing a map of smoothed frequencies by convolving 
+        the map with a 1D Gaussian Kernal.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 4D, 5D or 6D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D, 5D or 6D array.
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 4D, 5D or 6D array.
+        ------------------------------
+        """
+
+        kernel = self.gaussian_kernelZ()            # Computing 2D Gaussian Kernal
+        axes   = len(map.shape) - 4                 # Frequency axes of map matrix over which to compute the convolution
+
+        """Computing convolution"""
         if len(map.shape) == 4:
             n0, n1, n2, n3 = map.shape
             
-            map = map.reshape(n0 * n1, n2, n3)
-            nhit = nhit.reshape(n0 * n1, n2, n3)
+            map = map.reshape(n0 * n1, n2, n3)      # Reshaping [..., sb, channel, ...] into continous [..., frequency, ...] = [..., sb * channel, ...] 
+            nhit = nhit.reshape(n0 * n1, n2, n3)    # for convolution in frequency direction.
             rms = rms.reshape(n0 * n1, n2, n3)
             
             self.map    = signal.fftconvolve(map,   kernel[:, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(map.shape) - 3)
+                                            mode='same', axes = axes)
             self.nhit   = signal.fftconvolve(nhit,  kernel[:, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(nhit.shape) - 3)
+                                            mode='same', axes = axes)
             self.rms    = signal.fftconvolve(rms,   kernel[:, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(rms.shape) - 3)
+                                            mode='same', axes = axes)
 
-            self.map = self.map.reshape(n0, n1, n2, n3)
+            self.map = self.map.reshape(n0, n1, n2, n3)         # Reshaping back to original [..., sb, channel, ...] format
             self.nhit = self.nhit.reshape(n0, n1, n2, n3)
             self.rms = self.rms.reshape(n0, n1, n2, n3)
             
-
         elif len(map.shape) == 5:
             n0, n1, n2, n3, n4 = map.shape
-            map = map.reshape(n0, n1 * n2, n3, n4)
-            nhit = nhit.reshape(n0, n1 * n2, n3, n4)
+            map = map.reshape(n0, n1 * n2, n3, n4)      # Reshaping [..., sb, channel, ...] into continous [..., frequency, ...] = [..., sb * channel, ...]
+            nhit = nhit.reshape(n0, n1 * n2, n3, n4)    # for convolution in frequency direction.
             rms = rms.reshape(n0, n1 * n2, n3, n4)
             
             self.map    = signal.fftconvolve(map,  kernel[np.newaxis, :, np.newaxis,  np.newaxis], 
-                                            mode='same', axes = len(map.shape) - 3)
+                                            mode='same', axes = axes)
             self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, :, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(nhit.shape) - 3)
+                                            mode='same', axes = axes)
             self.rms    = signal.fftconvolve(rms,  kernel[np.newaxis, :, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(rms.shape) - 3)
+                                            mode='same', axes = axes)
 
-            self.map = self.map.reshape(n0, n1, n2, n3, n4)
+            self.map = self.map.reshape(n0, n1, n2, n3, n4)     # Reshaping back to original [..., sb, channel, ...] format
             self.nhit = self.nhit.reshape(n0, n1, n2, n3, n4)
             self.rms = self.rms.reshape(n0, n1, n2, n3, n4)
             
         elif len(map.shape) == 6:
             n0, n1, n2, n3, n4, n5 = map.shape
-            map = map.reshape(n0, n1, n2 * n3, n4, n5)
-            nhit = nhit.reshape(n0, n1, n2 * n3, n4, n5)
+            map = map.reshape(n0, n1, n2 * n3, n4, n5)      # Reshaping [..., sb, channel, ...] into continous [..., frequency, ...] = [..., sb * channel, ...]
+            nhit = nhit.reshape(n0, n1, n2 * n3, n4, n5)    # for convolution in frequency direction.
             rms = rms.reshape(n0, n1, n2 * n3, n4, n5)
 
             self.map    = signal.fftconvolve(map, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(map.shape) - 3)
+                                            mode='same', axes = axes)
             self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(nhit.shape) - 3)
+                                            mode='same', axes = axes)
             self.rms    = signal.fftconvolve(rms, kernel[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis], 
-                                            mode='same', axes = len(rms.shape) - 3)
+                                            mode='same', axes = axes)
 
-            self.map = self.map.reshape(n0, n1, n2, n3, n4, n5)
+            self.map = self.map.reshape(n0, n1, n2, n3, n4, n5)     # Reshaping back to original [..., sb, channel, ...] format
             self.nhit = self.nhit.reshape(n0, n1, n2, n3, n4, n5)
             self.rms = self.rms.reshape(n0, n1, n2, n3, n4, n5)
+
+    def gaussian_smoothXYZ(self, map, nhit, rms):
+        """
+        Function computing a map of smoothed voxels by convolving 
+        the map with a 3D Gaussian Kernal.
+
+        Parameters:
+        ------------------------------
+        map_l: numpy.ndarray
+            Map dataset of first input file. Must be 4D, 5D or 6D array.
+        nhit_l: numpy.ndarray
+            Number of hits dataset of first input file. Must be 4D, 5D or 6D array.
+        rms_l: numpy.ndarray
+            Rms dataset of first input file. Must be 4D, 5D or 6D array.
+        ------------------------------
+        """
+        kernel = self.gaussian_kernelXYZ()      # Computing 2D Gaussian Kernal
+        axes = [len(map.shape) - 4, 
+                len(map.shape) - 3, 
+                len(map.shape) - 2]             # Voxel axes of map matrix over which to compute the convolution
+        
+        """Computing convolution"""
+        if len(map.shape) == 4:
+            n0, n1, n2, n3 = map.shape
+            
+            map = map.reshape(n0 * n1, n2, n3)      # Reshaping [..., sb, channel, ...] into continous [..., frequency, ...] = [..., sb * channel, ...]
+            nhit = nhit.reshape(n0 * n1, n2, n3)    # for convolution in frequency direction.
+            rms = rms.reshape(n0 * n1, n2, n3)
+
+            self.map    = signal.fftconvolve(map,   kernel, mode='same', 
+                                            axes = axes)
+            self.nhit   = signal.fftconvolve(nhit,  kernel, mode='same', 
+                                            axes = axes)
+            self.rms    = signal.fftconvolve(rms,   kernel, mode='same', 
+                                            axes = axes)
+
+            self.map = self.map.reshape(n0, n1, n2, n3)     # Reshaping back to original [..., sb, channel, ...] format
+            self.nhit = self.nhit.reshape(n0, n1, n2, n3)
+            self.rms = self.rms.reshape(n0, n1, n2, n3)
+            
+        elif len(map.shape) == 5:
+            n0, n1, n2, n3, n4 = map.shape
+            map = map.reshape(n0, n1 * n2, n3, n4)      # Reshaping [..., sb, channel, ...] into continous [..., frequency, ...] = [..., sb * channel, ...]
+            nhit = nhit.reshape(n0, n1 * n2, n3, n4)    # for convolution in frequency direction.
+            rms = rms.reshape(n0, n1 * n2, n3, n4)
+            
+            self.map    = signal.fftconvolve(map,  kernel[np.newaxis, :, :, :], 
+                                            mode='same', axes = axes) 
+                                                                
+            self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, :, :, :], 
+                                            mode='same', axes = axes)
+
+            self.rms    = signal.fftconvolve(rms,  kernel[np.newaxis, :, :, :], 
+                                            mode='same', axes = axes)
+
+            self.map = self.map.reshape(n0, n1, n2, n3, n4)     # Reshaping back to original [..., sb, channel, ...] format
+            self.nhit = self.nhit.reshape(n0, n1, n2, n3, n4)
+            self.rms = self.rms.reshape(n0, n1, n2, n3, n4)
+            
+        elif len(map.shape) == 6:
+            n0, n1, n2, n3, n4, n5 = map.shape
+            map = map.reshape(n0, n1, n2 * n3, n4, n5)      # Reshaping [..., sb, channel, ...] into continous [..., frequency, ...] = [..., sb * channel, ...]
+            nhit = nhit.reshape(n0, n1, n2 * n3, n4, n5)    # for convolution in frequency direction.
+            rms = rms.reshape(n0, n1, n2 * n3, n4, n5)
+            
+            self.map    = signal.fftconvolve(map, kernel[np.newaxis, np.newaxis, :, :, :], 
+                                            mode='same', axes = axes)
+
+            self.nhit   = signal.fftconvolve(nhit, kernel[np.newaxis, np.newaxis, :, :, :], 
+                                            mode='same', axes = axes)
+
+            self.rms    = signal.fftconvolve(rms, kernel[np.newaxis, np.newaxis, :, :, :], 
+                                            mode='same', axes = axes)
+
+            self.map = self.map.reshape(n0, n1, n2, n3, n4, n5)     # Reshaping back to original [..., sb, channel, ...] format
+            self.nhit = self.nhit.reshape(n0, n1, n2, n3, n4, n5)
+            self.rms = self.rms.reshape(n0, n1, n2, n3, n4, n5)
+
 
 if __name__ == "__main__":
     t = time.time()
