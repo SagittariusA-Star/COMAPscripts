@@ -1248,15 +1248,15 @@ void ugradeXY4D(float* map_h, int* nhit_h, float* rms_h,
     ------------------------------
     */  
     // Precomputing index factors for flattened indies                    
-    int p_h = N2 * N3;
-    int p_h1 = p_h * n1;
-    int idx_h;
+    long int p_h = N2 * N3;
+    long int p_h1 = p_h * n1;
+    long int idx_h;
     
-    int p_l = n2 * n3;
-    int p_l1 = p_l * n1;
-    int idx_l;
+    long int p_l = n2 * n3;
+    long int p_l1 = p_l * n1;
+    long int idx_l;
 
-    int i, j, k ,l, a, b;
+    long int i, j, k ,l, a, b;
     
     // Looping through datasets to transform each pixel into a grid of sub-pixels.
     for(i=0; i < n0; i++){
@@ -1313,17 +1313,17 @@ void ugradeXY5D(float* map_h, int* nhit_h, float* rms_h,
     ------------------------------
     */  
     // Precomputing index factors for flattened indies    
-    int p_h = N3 * N4;
-    int p_h1 = p_h * n2;
-    int p_h2 =  p_h1 * n1;
-    int idx_h;
+    long int p_h = N3 * N4;
+    long int p_h1 = p_h * n2;
+    long int p_h2 =  p_h1 * n1;
+    long int idx_h;
     
-    int p_l = n3 * n4;
-    int p_l1 = p_l * n2;
-    int p_l2 =  p_l1 * n1;
-    int idx_l;
+    long int p_l = n3 * n4;
+    long int p_l1 = p_l * n2;
+    long int p_l2 =  p_l1 * n1;
+    long int idx_l;
 
-    int i, j, k ,l, m, a, b;
+    long int i, j, k ,l, m, a, b;
 
     // Looping through datasets to transform each pixel into a grid of sub-pixels.
     for(i=0; i < n0; i++){
@@ -1383,20 +1383,19 @@ void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h,
     ------------------------------
     */  
     // Precomputing index factors for flattened indies 
-    int p_h = N4 * N5;
-    int p_h1 = p_h * n3;
-    int p_h2 =  p_h1 * n2;
-    int p_h3 =  p_h2 * n1;
-    int idx_h;
+    long int p_h = N4 * N5;
+    long int p_h1 = p_h * n3;
+    long int p_h2 =  p_h1 * n2;
+    long int p_h3 =  p_h2 * n1;
+    long int idx_h;
 
-    int p_l = n4 * n5;
-    int p_l1 = p_l * n3;
-    int p_l2 = p_l1 * n2;
-    int p_l3 = p_l2 * n1;
-    int idx_l;
+    long int p_l = n4 * n5;
+    long int p_l1 = p_l * n3;
+    long int p_l2 = p_l1 * n2;
+    long int p_l3 = p_l2 * n1;
+    long int idx_l;
 
-    int i, j, k ,l, m, n, a, b;
-
+    long int i, j, k ,l, m, n, a, b;
     // Looping through datasets to transform each pixel into a grid of sub-pixels.
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
@@ -1410,9 +1409,11 @@ void ugradeXY6D(float* map_h, int* nhit_h, float* rms_h,
                             for(m = a * num; m < (a + 1) * num; m++){
                                 for(n = b * num; n < (b + 1) * num; n++){
                                     idx_h = p_h3 * i + p_h2 * j + p_h1 * k + p_h * l + N5 * m + n;
+                                    
                                     map_h[idx_h]    = map_l[idx_l];       
                                     nhit_h[idx_h]   = nhit_l[idx_l];       
-                                    rms_h[idx_h]    = rms_l[idx_l];}
+                                    rms_h[idx_h]    = rms_l[idx_l];  
+                                }
                             }
                         }      
                     }
@@ -1456,15 +1457,15 @@ void ugradeZ4D(float* map_h, int* nhit_h, float* rms_h,
     ------------------------------
     */  
     // Precomputing index factors for flattened indies
-    int p_h = n2 * n3;
-    int p_h1 = p_h * N1;
-    int idx_h;
+    long int p_h = n2 * n3;
+    long int p_h1 = p_h * N1;
+    long int idx_h;
     
-    int p_l = n2 * n3;
-    int p_l1 = p_l * n1;
-    int idx_l;
+    long int p_l = n2 * n3;
+    long int p_l1 = p_l * n1;
+    long int idx_l;
 
-    int i, j, k ,l, a;
+    long int i, j, k ,l, a;
     
     // Looping through datasets to transform each frequency into a number of sub-channels.
     for(i=0; i < n0; i++){
@@ -1518,17 +1519,17 @@ void ugradeZ5D(float* map_h, int* nhit_h, float* rms_h,
     ------------------------------
     */  
     // Precomputing index factors for flattened indies
-    int p_h = n3 * n4;
-    int p_h1 = p_h * N2;
-    int p_h2 =  p_h1 * n1;
-    int idx_h;
+    long int p_h = n3 * n4;
+    long int p_h1 = p_h * N2;
+    long int p_h2 =  p_h1 * n1;
+    long int idx_h;
     
-    int p_l = n3 * n4;
-    int p_l1 = p_l * n2;
-    int p_l2 =  p_l1 * n1;
-    int idx_l;
+    long int p_l = n3 * n4;
+    long int p_l1 = p_l * n2;
+    long int p_l2 =  p_l1 * n1;
+    long int idx_l;
 
-    int i, j, k ,l, m, a;
+    long int i, j, k ,l, m, a;
 
     // Looping through datasets to transform each frequency into a number of sub-channels.
     for(i=0; i < n0; i++){
@@ -1584,19 +1585,19 @@ void ugradeZ6D(float* map_h, int* nhit_h, float* rms_h,
     ------------------------------
     */  
     // Precomputing index factors for flattened indies               
-    int p_h = n4 * n5;
-    int p_h1 = p_h * N3;
-    int p_h2 =  p_h1 * n2;
-    int p_h3 =  p_h2 * n1;
-    int idx_h;
+    long int p_h = n4 * n5;
+    long int p_h1 = p_h * N3;
+    long int p_h2 =  p_h1 * n2;
+    long int p_h3 =  p_h2 * n1;
+    long int idx_h;
 
-    int p_l = n4 * n5;
-    int p_l1 = p_l * n3;
-    int p_l2 = p_l1 * n2;
-    int p_l3 = p_l2 * n1;
-    int idx_l;
+    long int p_l = n4 * n5;
+    long int p_l1 = p_l * n3;
+    long int p_l2 = p_l1 * n2;
+    long int p_l3 = p_l2 * n1;
+    long int idx_l;
 
-    int i, j, k ,l, m, n, a;
+    long int i, j, k ,l, m, n, a;
 
     // Looping through datasets to transform each frequency into a number of sub-channels.
     for(i=0; i < n0; i++){
@@ -1657,15 +1658,15 @@ void ugradeXYZ4D(float* map_h, int* nhit_h, float* rms_h,
     ------------------------------
     */  
     // Precomputing index factors for flattened indies                
-    int p_h = N2 * N3;
-    int p_h1 = p_h * N1;
-    int idx_h;
+    long int p_h = N2 * N3;
+    long int p_h1 = p_h * N1;
+    long int idx_h;
     
-    int p_l = n2 * n3;
-    int p_l1 = p_l * n1;
-    int idx_l;
+    long int p_l = n2 * n3;
+    long int p_l1 = p_l * n1;
+    long int idx_l;
 
-    int i, j, k ,l, x, y, z;
+    long int i, j, k ,l, x, y, z;
 
     // Looping through datasets to transform each pixel-frequency cube into a number of sub-cubes.
     for(i=0; i < n0; i++){
@@ -1696,17 +1697,17 @@ void ugradeXYZ5D(float* map_h, int* nhit_h, float* rms_h,
                int N3,       int N4,            int numZ,       
                int numXY){
 
-    int p_h = N3 * N4;
-    int p_h1 = p_h * N2;
-    int p_h2 =  p_h1 * n1;
-    int idx_h;
+    long int p_h = N3 * N4;
+    long int p_h1 = p_h * N2;
+    long int p_h2 =  p_h1 * n1;
+    long int idx_h;
     
-    int p_l = n3 * n4;
-    int p_l1 = p_l * n2;
-    int p_l2 =  p_l1 * n1;
-    int idx_l;
+    long int p_l = n3 * n4;
+    long int p_l1 = p_l * n2;
+    long int p_l2 =  p_l1 * n1;
+    long int idx_l;
 
-    int i, j, k ,l, m, x, y, z;
+    long int i, j, k ,l, m, x, y, z;
     
     for(i=0; i < n0; i++){
         for(j=0; j < n1; j++){
@@ -1769,19 +1770,19 @@ void ugradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
     */  
     // Precomputing index factors for flattened indies                 
 
-    int p_h = N4 * N5;
-    int p_h1 = p_h * n3;
-    int p_h2 =  p_h1 * n2;
-    int p_h3 =  p_h2 * n1;
-    int idx_h;
+    long int p_h = N4 * N5;
+    long int p_h1 = p_h * n3;
+    long int p_h2 =  p_h1 * n2;
+    long int p_h3 =  p_h2 * n1;
+    long int idx_h;
 
-    int p_l = n4 * n5;
-    int p_l1 = p_l * n3;
-    int p_l2 = p_l1 * n2;
-    int p_l3 = p_l2 * n1;
-    int idx_l;
+    long int p_l = n4 * n5;
+    long int p_l1 = p_l * n3;
+    long int p_l2 = p_l1 * n2;
+    long int p_l3 = p_l2 * n1;
+    long int idx_l;
 
-    int i, j, k ,z, x, y, l, m, n;
+    long int i, j, k ,z, x, y, l, m, n;
 
     // Looping through datasets to transform each pixel into a grid of sub-pixels.
     for(i=0; i < n0; i++){

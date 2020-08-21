@@ -35,8 +35,8 @@ class Atlas:
         self.patch2       = ''      # Patch name of second infile.
         self.infile1      = None    # Fist infile name.
         self.infile2      = None    # Second infile name.
-        self.maputilslib = ctypes.cdll.LoadLibrary("/mn/stornext/d16/cmbco/comap/protodir/auxiliary/maputilslib.so.1")  # Load shared C utils library.
-        #self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
+        #self.maputilslib = ctypes.cdll.LoadLibrary("/mn/stornext/d16/cmbco/comap/protodir/auxiliary/maputilslib.so.1")  # Load shared C utils library.
+        self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
 
         self.input()    # Calling the input function to set variables dependent on command line input.
 
@@ -546,9 +546,9 @@ class Atlas:
                 elif not condition and "ugrade" in self.tool:
                     """Reading and modifying other datasets"""
                     x1, y1 = self.dfile1["x"][:], self.dfile1["y"][:]
-                    dx, dy = x[1] - x[0], y[1] - y[0]
-                    first_center_x = x[0] - dx / 4  # Finding center of new pixels x value
-                    first_center_y = y[0] - dy / 4  # Finding center of new pixel y value
+                    dx, dy = x1[1] - x1[0], y1[1] - y1[0]
+                    first_center_x = x1[0] - dx / 4  # Finding center of new pixels x value
+                    first_center_y = y1[0] - dy / 4  # Finding center of new pixel y value
                     x      = np.zeros(len(x1) * self.merge_numXY) 
                     y      = np.zeros(len(y1) * self.merge_numXY)
 
@@ -562,11 +562,10 @@ class Atlas:
                     freq1   = self.dfile1["freq"][:]
                     freq    = np.zeros((freq1.shape[0], freq1.shape[1] * self.merge_numZ))
                     """Filling up frequency channe array with new bin centers"""
-                    for i in range(freq.shape[0]):
-                        df = freq[1,:] - freq[0,:]
-                        first_center_freq = freq[i, 0] - df / 4 # Finding center of new pixel y value
-                        for j in range(freq.shape[1]):
-                            freq[i, j] = first_center_freq + j * df / 2 
+                    df = freq1[:, 1] - freq1[:, 0]
+                    first_center_freq = freq1[:, 0] - df / 4    # Finding center of new pixel y value
+                    for i in range(freq.shape[1]):
+                        freq[:, i] = first_center_freq + i * df / 2
                     
                     """Copying over data to outfile"""
                     self.ofile.create_dataset("x",      data = x)
