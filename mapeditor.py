@@ -35,8 +35,8 @@ class Atlas:
         self.patch2       = ''      # Patch name of second infile.
         self.infile1      = None    # Fist infile name.
         self.infile2      = None    # Second infile name.
-        #self.maputilslib = ctypes.cdll.LoadLibrary("/mn/stornext/d16/cmbco/comap/protodir/auxiliary/maputilslib.so.1")  # Load shared C utils library.
-        self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
+        self.maputilslib = ctypes.cdll.LoadLibrary("/mn/stornext/d16/cmbco/comap/protodir/auxiliary/maputilslib.so.1")  # Load shared C utils library.
+        #self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
 
         self.input()    # Calling the input function to set variables dependent on command line input.
 
@@ -774,7 +774,7 @@ class Atlas:
             
                         elif self.tool == "smoothZ":
                             self.gaussian_smoothZ(self.map1, self.nhit1, self.rms1)
-
+                        
                         elif self.tool == "smoothXYZ":
                             self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
 
@@ -899,7 +899,7 @@ class Atlas:
 
                     elif self.tool == "smoothXYZ":
                         self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
-                    
+
                     self.writeMap(jack)
 
             if self.full:
