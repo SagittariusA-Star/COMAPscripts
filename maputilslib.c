@@ -482,7 +482,6 @@ void dgradeXY4D(float* map_h, int* nhit_h, float* rms_h,
                             }
                             else{
                                 inv_var1    = 0;
-                                map_l[idx_l]  = 0;
                             }
                             inv_var1_sum   += inv_var1;
                         }
@@ -570,7 +569,6 @@ void dgradeXY5D(float* map_h, int* nhit_h, float* rms_h,
                                 }
                                 else{
                                     inv_var1    = 0;
-                                    map_l[idx_l]  = 0;
                                 }
                                 inv_var1_sum   += inv_var1;
                             }
@@ -661,7 +659,6 @@ void dgradeXY6D(float* map_h, int* nhit_h, float* rms_h,
                                     }
                                     else{
                                         inv_var1    = 0;
-                                        map_l[idx_l]  = 0;
                                     }
                                     inv_var1_sum   += inv_var1;
                                 }
@@ -745,7 +742,6 @@ void dgradeZ4D(float* map_h, int* nhit_h, float* rms_h,
                         }
                         else{
                             inv_var1    = 0;
-                            map_l[idx_l]  = 0;
                         }
                         inv_var1_sum   += inv_var1;
                     }
@@ -829,7 +825,6 @@ void dgradeZ5D(float* map_h, int* nhit_h, float* rms_h,
                             }
                             else{
                                 inv_var1    = 0;
-                                map_l[idx_l]  = 0;
                             }
                             inv_var1_sum   += inv_var1;
                         }
@@ -916,7 +911,6 @@ void dgradeZ6D(float* map_h, int* nhit_h, float* rms_h,
                                 }
                                 else{
                                     inv_var1    = 0;
-                                    map_l[idx_l]  = 0;
                                 }
                                 inv_var1_sum   += inv_var1;
                             }
@@ -1003,7 +997,6 @@ void dgradeXYZ4D(float* map_h, int* nhit_h, float* rms_h,
                                 }
                                 else{
                                     inv_var1    = 0;
-                                    map_l[idx_l]  = 0;
                                 }
                                 inv_var1_sum   += inv_var1;
                             }
@@ -1094,7 +1087,6 @@ void dgradeXYZ5D(float* map_h, int* nhit_h, float* rms_h,
                                     }
                                     else{
                                         inv_var1    = 0;
-                                        map_l[idx_l]  = 0;
                                     }
                                     inv_var1_sum   += inv_var1;
                                 }
@@ -1188,7 +1180,6 @@ void dgradeXYZ6D(float* map_h, int* nhit_h, float* rms_h,
                                         }
                                         else{
                                             inv_var1    = 0;
-                                            map_l[idx_l]  = 0;
                                         }
                                         inv_var1_sum   += inv_var1;
                                     }
