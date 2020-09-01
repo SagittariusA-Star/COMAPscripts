@@ -263,7 +263,6 @@ void subtract4D(float* map1, int* nhit1, float* rms1,
                         var1  = rms1[idx] * rms1[idx];
                         var2  = rms2[idx] * rms2[idx];
                         map[idx]  = map1[idx] - map2[idx];
-
                         nhit[idx] = nhit1[idx] + nhit2[idx];
                         rms[idx]  =  sqrt(var1 + var2);
                     }

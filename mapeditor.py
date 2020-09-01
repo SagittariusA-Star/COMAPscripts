@@ -6,7 +6,6 @@ from scipy import signal
 import h5py as h5
 import textwrap
 import ctypes
-import matplotlib.pyplot as plt
 
 class Atlas:
     def __init__(self):
@@ -21,7 +20,7 @@ class Atlas:
         self.tool_choices   = ["coadd", "subtract", "dgradeXY", "dgradeZ", "dgradeXYZ",
                                                     "ugradeXY", "ugradeZ", "ugradeXYZ",
                                                     "smoothXY", "smoothZ", "smoothXYZ"]     # Tool choices.
-        self.tool         = "coadd"               # Default tool is coadd.
+        self.tool         = None               # Default tool is coadd.
         self.det_list     = np.arange(1,20)         # List of detectors to use, default all.
         self.sb_list      = np.arange(1,5)          # List of sidebands to use, default all.
         self.freq_list    = np.arange(1,65)         # List of frequency channels per sideband, default all.
@@ -35,8 +34,8 @@ class Atlas:
         self.patch2       = ''      # Patch name of second infile.
         self.infile1      = None    # Fist infile name.
         self.infile2      = None    # Second infile name.
-        #self.maputilslib = ctypes.cdll.LoadLibrary("/mn/stornext/d16/cmbco/comap/protodir/auxiliary/maputilslib.so.1")  # Load shared C utils library.
-        self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
+        self.maputilslib = ctypes.cdll.LoadLibrary("/mn/stornext/d16/cmbco/comap/protodir/auxiliary/maputilslib.so.1")  # Load shared C utils library.
+        #self.maputilslib = ctypes.cdll.LoadLibrary("maputilslib.so.1")  # Load shared C utils library.
 
         self.input()    # Calling the input function to set variables dependent on command line input.
 
@@ -101,6 +100,7 @@ class Atlas:
                 smoothXYZ    = "smoothXYZ" in arg.split(",")
 
                 if "coadd" in arg or "subtract" in arg:
+                    self.tool = arg
                     if self.infile1 != None and self.infile2 == None:
                         print("To perform a coadd or subtraction two input files must be given!")
                         sys.exit()
@@ -191,7 +191,6 @@ class Atlas:
                         self.tool, self.sigmaX, self.sigmaY, self.n_sigma = arg.split(",")
                         self.sigmaX, self.sigmaY, self.n_sigma = float(self.sigmaX), float(self.sigmaY), int(self.n_sigma)
                     
-
                     if self.infile1 != None and self.infile2 != None:
                         print("Gaussian smoothing is only supported for single input file!")
                         sys.exit()
@@ -246,13 +245,10 @@ class Atlas:
                     print(textwrap.dedent(message))
                     sys.exit()
 
-                else:
-                    self.tool = arg
-                
                 if self.tool not in self.tool_choices:
                     print("Make sure you have chosen the correct tool choices")                                                                                                   
                     sys.exit() 
-                
+        
             elif opt in ("-b", "--beam"):
                 """If beam is chosen, subsequent operations are only performed on _beam datasets"""
                 self.beam = True
@@ -967,7 +963,7 @@ class Atlas:
 
                 elif self.tool == "smoothXYZ":
                     self.gaussian_smoothXYZ(self.map1, self.nhit1, self.rms1)
-
+                
                 self.writeMap()
                 self.full = _full
             self.writeMap(write_the_rest = True)            
@@ -1135,12 +1131,12 @@ class Atlas:
         self.map        = np.zeros_like(map1,   dtype = ctypes.c_float)     # Generating arrays to fill up with coadded data.
         self.nhit       = np.zeros_like(nhit1,  dtype = ctypes.c_int)
         self.rms        = np.zeros_like(rms1,   dtype = ctypes.c_float)
-
+        
         self.maputilslib.subtract4D(map1, nhit1, rms1,              # Filling self.map, self.nhit and self.rms by
                                  map2, nhit2, rms2,                 # call-by-pointer to C library.
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3)
-    
+        
     def C_subtract5D(self, map1, nhit1, rms1,
                            map2, nhit2, rms2):
         """
@@ -2135,6 +2131,53 @@ if __name__ == "__main__":
     t = time.time()
     map = Atlas()
     print("Run time: ", time.time() - t, " sec")
+    """
+    dummy_map = np.zeros((1,2,2,2), dtype = np.float32)
+    dummy_nhit = np.zeros((1,2,2,2), dtype = np.int32)
+    dummy_rms = np.zeros((1,2,2,2), dtype  = np.float32)
+
+    dummy_map[0, 0, :, :] = 0
+    dummy_map[0, 1, 1, :] = 0
+    dummy_map[0, 1, 0, 0] = 1
+    dummy_map[0, 1, 0, 1] = 1
+
+    dummy_nhit[0, 0, :, :] = 0
+    dummy_nhit[0, 1, 1, :] = 0
+    dummy_nhit[0, 1, 0, 0] = 2
+    dummy_nhit[0, 1, 0, 1] = 1
+
+    dummy_rms[0, 0, :, :] = 0
+    dummy_rms[0, 1, 1, :] = 0
+    dummy_rms[0, 1, 0, 0] = 1 / np.sqrt(2)
+    dummy_rms[0, 1, 0, 1] = 1   
+    
+    map.C_dgradeXY4D(dummy_map, dummy_nhit, dummy_rms)
+    print("map")
+    print(dummy_map[0, 0, :, :])
+    print(dummy_map[0, 1, :, :])
+    print("nhit")
+
+    print(dummy_nhit[0, 0, :, :])
+    print(dummy_nhit[0, 1, :, :])
+    print("rms")
+
+    print(dummy_rms[0, 0, :, :])
+    print(dummy_rms[0, 1, :, :])
+
+    print("map")
+    print(map.map[0, 0, :, :])
+    print(map.map[0, 1, :, :])
+
+    print("nhit")
+    print(map.nhit[0, 0, :, :])
+    print(map.nhit[0, 1, :, :])
+
+    print("rms")
+    print(map.rms[0, 0, :, :])
+    print(map.rms[0, 1, :, :])
+    """
+
+
 
 
 
