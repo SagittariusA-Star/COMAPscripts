@@ -636,8 +636,8 @@ class Atlas:
                                    self.map2, self.nhit2, self.rms2)
 
                 elif self.tool == "subtract": 
-                    self.map   = self.subtract(self.map1, self.map2)
-                    self.nhit   = self.subtract(self.nhit1, self.nhit2)
+                    self.map   = self.subtract5D(self.map1, self.map2)
+                    self.nhit   = self.subtract5D(self.nhit1, self.nhit2)
                     self.rms   = self.add_rms(self.rms1, self.rms2)
                 self.writeMap()
                 
