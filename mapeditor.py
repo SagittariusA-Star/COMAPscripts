@@ -12,10 +12,10 @@ class Atlas:
         """
         Initiating Atlas class and setting class attributes and default command line arguments
         """
-        self.jk_choices   = ["odde", "dayn", "half", "sdlb"]    # Possible choices of jackknife modes.
-        self.jk           = None                                # If no jackknife argument is given self.jk will be None.
-        self.jack         = False                               # If ture operations are performed on jackknives, changes to 
-                                                                #true if jackknife command line input is given.
+        self.jk_choices   = ["odde", "dayn", "half", "sdlb", "sidr"]    # Possible choices of jackknife modes.
+        self.jk           = None                                        # If no jackknife argument is given self.jk will be None.
+        self.jack         = False                                       # If ture operations are performed on jackknives, changes to 
+                                                                        #true if jackknife command line input is given.
 
         self.tool_choices   = ["coadd", "subtract", "dgradeXY", "dgradeZ", "dgradeXYZ",
                                                     "ugradeXY", "ugradeZ", "ugradeXYZ",
@@ -636,9 +636,8 @@ class Atlas:
                                    self.map2, self.nhit2, self.rms2)
 
                 elif self.tool == "subtract": 
-                    self.map   = self.subtract5D(self.map1, self.map2)
-                    self.nhit   = self.subtract5D(self.nhit1, self.nhit2)
-                    self.rms   = self.add_rms(self.rms1, self.rms2)
+                    self.C_subtract5D(self.map1, self.nhit1, self.rms1,
+                                      self.map2, self.nhit2, self.rms2)
                 self.writeMap()
                 
                 self.full = False
@@ -1131,12 +1130,12 @@ class Atlas:
         self.map        = np.zeros_like(map1,   dtype = ctypes.c_float)     # Generating arrays to fill up with coadded data.
         self.nhit       = np.zeros_like(nhit1,  dtype = ctypes.c_int)
         self.rms        = np.zeros_like(rms1,   dtype = ctypes.c_float)
-        
+
         self.maputilslib.subtract4D(map1, nhit1, rms1,              # Filling self.map, self.nhit and self.rms by
                                  map2, nhit2, rms2,                 # call-by-pointer to C library.
                                  self.map, self.nhit, self.rms,
                                  n0, n1, n2, n3)
-        
+    
     def C_subtract5D(self, map1, nhit1, rms1,
                            map2, nhit2, rms2):
         """
@@ -1219,8 +1218,6 @@ class Atlas:
                                  self.map, self.nhit, self.rms,
                                  n0,       n1,        n2, 
                                  n3,       n4,        n5)
-
-
 
     def C_dgradeXY4D(self, map_h, nhit_h, rms_h):
         """
