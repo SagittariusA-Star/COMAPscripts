@@ -1,1 +1,0 @@
-void makemaps(double* mapout, int nx, int ny);
